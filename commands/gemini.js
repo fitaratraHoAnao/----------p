@@ -10,15 +10,19 @@ module.exports = {
       sendMessage(senderId, { text: 'Please wait, I am processing your request...' }, pageAccessToken);
       const response = await callGeminiAPI(prompt);
 
+      // Ajouter le titre à chaque réponse
+      const title = '🇲🇬CHATBOT MADAGASCAR🇲🇬';
+      const fullResponse = `${title}\n\n${response}`;
+
       // Split the response into chunks if it exceeds 2000 characters
       const maxMessageLength = 2000;
-      if (response.length > maxMessageLength) {
-        const messages = splitMessageIntoChunks(response, maxMessageLength);
+      if (fullResponse.length > maxMessageLength) {
+        const messages = splitMessageIntoChunks(fullResponse, maxMessageLength);
         for (const message of messages) {
           sendMessage(senderId, { text: message }, pageAccessToken);
         }
       } else {
-        sendMessage(senderId, { text: response }, pageAccessToken);
+        sendMessage(senderId, { text: fullResponse }, pageAccessToken);
       }
     } catch (error) {
       console.error('Error calling Gemini API:', error);
