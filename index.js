@@ -8,8 +8,6 @@ const app = express();
 app.use(bodyParser.json());
 
 const VERIFY_TOKEN = 'pagebot';
-
-// Utilisation de la variable d'environnement ou du fichier token.txt
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN || fs.readFileSync('token.txt', 'utf8').trim();
 
 app.get('/webhook', (req, res) => {
@@ -24,26 +22,33 @@ app.get('/webhook', (req, res) => {
     } else {
       res.sendStatus(403);
     }
+  } else {
+    res.sendStatus(400); // Bad request if required parameters are missing
   }
 });
 
 app.post('/webhook', (req, res) => {
-  const body = req.body;
+  try {
+    const body = req.body;
 
-  if (body.object === 'page') {
-    body.entry.forEach(entry => {
-      entry.messaging.forEach(event => {
-        if (event.message) {
-          handleMessage(event, PAGE_ACCESS_TOKEN);
-        } else if (event.postback) {
-          handlePostback(event, PAGE_ACCESS_TOKEN);
-        }
+    if (body.object === 'page') {
+      body.entry.forEach(entry => {
+        entry.messaging.forEach(event => {
+          if (event.message) {
+            handleMessage(event, PAGE_ACCESS_TOKEN);
+          } else if (event.postback) {
+            handlePostback(event, PAGE_ACCESS_TOKEN);
+          }
+        });
       });
-    });
 
-    res.status(200).send('EVENT_RECEIVED');
-  } else {
-    res.sendStatus(404);
+      res.status(200).send('EVENT_RECEIVED');
+    } else {
+      res.sendStatus(404); // Not found for unsupported objects
+    }
+  } catch (error) {
+    console.error('Error processing webhook event:', error);
+    res.sendStatus(500); // Internal server error for unexpected issues
   }
 });
 
