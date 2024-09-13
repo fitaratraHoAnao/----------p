@@ -67,7 +67,7 @@ async function handleMessage(event, pageAccessToken) {
       }
     } else {
       // Si le message ne correspond à aucune commande connue, utiliser 'par' pour répondre automatiquement
-      const defaultCommand = commands.get('gemini');
+      const defaultCommand = commands.get('par');
       if (defaultCommand) {
         try {
           await defaultCommand.execute(senderId, [messageText], pageAccessToken, sendMessage);
