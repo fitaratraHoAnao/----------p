@@ -1,8 +1,8 @@
 const request = require('request');
 
 function sendMessage(senderId, message, pageAccessToken) {
-  if (!message || (!message.text && !message.attachment)) {
-    console.error('Error: Message must provide valid text or attachment.');
+  if (!message || (!message.text && !message.attachment && !message.quick_replies)) {
+    console.error('Error: Message must provide valid text, attachment, or quick replies.');
     return;
   }
 
@@ -17,6 +17,10 @@ function sendMessage(senderId, message, pageAccessToken) {
 
   if (message.attachment) {
     payload.message.attachment = message.attachment;
+  }
+
+  if (message.quick_replies) {
+    payload.message.quick_replies = message.quick_replies;
   }
 
   request({
