@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Liste des IDs des administrateurs autorisés
-const adminIds = ['100041841881488', 'ADMIN_ID_2'];  // Remplacez par les IDs réels des administrateurs
+const adminIds = ['100041841881488', '100020699087706'];  // Remplacez par les IDs réels des administrateurs
 
 module.exports = {
   name: 'help',
