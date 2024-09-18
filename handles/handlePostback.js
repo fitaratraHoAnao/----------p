@@ -1,22 +1,28 @@
 const { sendMessage } = require('./sendMessage');
 
+// Importer les états utilisateur partagés
+const { userStates } = require('./handleMessage');
+
 function handlePostback(event, pageAccessToken) {
   const senderId = event.sender.id;
   const payload = event.postback.payload;
 
-  // Vérifier et exécuter des actions en fonction du payload
+  // Gérer les actions en fonction du payload reçu
   switch (payload) {
     case 'traduction fr':
-      sendMessage(senderId, { text: 'Entrez le texte à traduire en Français.' }, pageAccessToken);
+      userStates[senderId] = { targetLang: 'fr' }; // Enregistrer la langue choisie
+      sendMessage(senderId, { text: 'Vous avez choisi la traduction en Français. Veuillez entrer le texte à traduire.' }, pageAccessToken);
       break;
     case 'traduction en':
-      sendMessage(senderId, { text: 'Enter the text to translate to English.' }, pageAccessToken);
+      userStates[senderId] = { targetLang: 'en' }; // Enregistrer la langue choisie
+      sendMessage(senderId, { text: 'Vous avez choisi la traduction en Anglais. Veuillez entrer le texte à traduire.' }, pageAccessToken);
       break;
     case 'traduction es':
-      sendMessage(senderId, { text: 'Ingrese el texto para traducir al Español.' }, pageAccessToken);
+      userStates[senderId] = { targetLang: 'es' }; // Enregistrer la langue choisie
+      sendMessage(senderId, { text: 'Vous avez choisi la traduction en Espagnol. Veuillez entrer le texte à traduire.' }, pageAccessToken);
       break;
     default:
-      sendMessage(senderId, { text: `Payload reçu : ${payload}` }, pageAccessToken);
+      sendMessage(senderId, { text: `Payload non reconnu : ${payload}` }, pageAccessToken);
   }
 }
 
