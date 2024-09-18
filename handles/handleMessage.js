@@ -8,6 +8,30 @@ async function handleMessage(event, pageAccessToken) {
   const senderId = event.sender.id;
   const messageText = event.message.text.trim().toLowerCase();
 
+  // Si l'utilisateur envoie "traduction", afficher les quick replies pour choisir la langue
+  if (messageText === 'traduction') {
+    return sendMessage(senderId, {
+      text: 'Choisissez une langue pour la traduction :',
+      quick_replies: [
+        {
+          content_type: 'text',
+          title: 'Français',
+          payload: 'traduction fr',
+        },
+        {
+          content_type: 'text',
+          title: 'Anglais',
+          payload: 'traduction en',
+        },
+        {
+          content_type: 'text',
+          title: 'Espagnol',
+          payload: 'traduction es',
+        }
+      ]
+    }, pageAccessToken);
+  }
+
   // Vérifier si l'utilisateur a déjà sélectionné une langue
   if (userStates[senderId] && userStates[senderId].targetLang) {
     // L'utilisateur a choisi une langue, donc on effectue la traduction
@@ -19,6 +43,7 @@ async function handleMessage(event, pageAccessToken) {
     // Réinitialiser l'état de l'utilisateur après la traduction
     delete userStates[senderId].targetLang;
   } else {
+    // Si aucune langue n'est sélectionnée, rappeler à l'utilisateur de choisir une langue
     sendMessage(senderId, { text: 'Veuillez d\'abord choisir une langue en envoyant "traduction".' }, pageAccessToken);
   }
 }
