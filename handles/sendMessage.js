@@ -19,6 +19,7 @@ function sendMessage(senderId, message, pageAccessToken) {
     payload.message.attachment = message.attachment;
   }
 
+  // Si les quick replies sont présents, les ajouter au payload
   if (message.quick_replies) {
     payload.message.quick_replies = message.quick_replies;
   }
