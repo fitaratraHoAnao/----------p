@@ -1,88 +1,59 @@
-const fs = require('fs');
-const path = require('path');
-const { sendMessage } = require('./sendMessage');
+const sendMessage = require('./sendMessage');
+const axios = require('axios');
 
-// Stocker les états d'activation des commandes pour chaque utilisateur
-const commandStates = {};
-const activeCommands = {};
+const handleMessage = async (event) => {
+    const senderId = event.sender.id;
+    const message = event.message;
 
-// Charger tous les modules de commande dynamiquement
-const commands = new Map();
-const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
-for (const file of commandFiles) {
-  const command = require(`../commands/${file}`);
-  commands.set(command.name, command);
-}
+    // Message d'attente
+    const typingMessage = "🇲🇬 *Bruno* rédige sa réponse... un instant, s'il vous plaît 🍟";
+    await sendMessage(senderId, typingMessage); // Envoyer le message d'attente
 
-async function handleMessage(event, pageAccessToken) {
-  const senderId = event.sender.id;
-  const messageText = event.message.text.toLowerCase().trim();
+    // Ajouter un délai de 2 secondes
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-  // Initialiser l'état de la commande pour l'utilisateur s'il n'existe pas
-  commandStates[senderId] = commandStates[senderId] || { active: true };
-  activeCommands[senderId] = activeCommands[senderId] || null;
+    // Vérifier si l'utilisateur a envoyé une image
+    if (message.attachments && message.attachments[0].type === 'image') {
+        const imageUrl = message.attachments[0].payload.url;
 
-  // Diviser le message en parties pour extraire la commande et les arguments
-  const args = messageText.split(' ');
-  const commandName = args.shift();
+        // Appeler l'API Flask avec l'image
+        const prompt = "Veuillez analyser l'image et continuer la conversation.";
+        const customId = senderId;
 
-  // Gérer la commande "stop" et "start"
-  if (commandName === 'stop') {
-    // Désactiver toutes les commandes pour l'utilisateur
-    commandStates[senderId].active = false;
-    activeCommands[senderId] = null;
-    return sendMessage(senderId, { text: 'All commands have been stopped.' }, pageAccessToken);
-  }
+        try {
+            const response = await axios.post('https://gemini-ap-espa-bruno.onrender.com/api/gemini', {
+                prompt,
+                customId,
+                link: imageUrl
+            });
+            const reply = response.data.message;
 
-  if (commandName === 'start') {
-    // Réactiver toutes les commandes pour l'utilisateur
-    commandStates[senderId].active = true;
-    return sendMessage(senderId, { text: 'All commands have been started.' }, pageAccessToken);
-  }
+            // Envoyer la réponse au user
+            sendMessage(senderId, reply);
+        } catch (error) {
+            console.error('Error calling the API:', error);
+            sendMessage(senderId, 'Sorry, something went wrong when processing the image.');
+        }
+    } 
+    // Si c'est un message texte, continuer la conversation
+    else if (message.text) {
+        const prompt = message.text;
+        const customId = senderId;
 
-  // Gérer les commandes spécifiques
-  if (activeCommands[senderId]) {
-    const command = commands.get(activeCommands[senderId]);
-    if (command) {
-      try {
-        await command.execute(senderId, args, pageAccessToken, sendMessage);
-      } catch (error) {
-        console.error(`Error executing command ${activeCommands[senderId]}:`, error);
-        sendMessage(senderId, { text: 'There was an error executing your command.' }, pageAccessToken);
-      }
-      return; // Ne pas continuer à vérifier d'autres commandes
-    }
-  }
+        try {
+            const response = await axios.post('https://gemini-ap-espa-bruno.onrender.com/api/gemini', {
+                prompt,
+                customId
+            });
+            const reply = response.data.message;
 
-  // Vérifier si une commande est activée pour l'utilisateur
-  if (commandStates[senderId].active) {
-    if (commands.has(commandName)) {
-      const command = commands.get(commandName);
-      activeCommands[senderId] = commandName; // Activer la commande spécifique pour cet utilisateur
-      try {
-        await command.execute(senderId, args, pageAccessToken, sendMessage);
-      } catch (error) {
-        console.error(`Error executing command ${commandName}:`, error);
-        sendMessage(senderId, { text: 'There was an error executing your command.' }, pageAccessToken);
-      }
-    } else {
-      // Si le message ne correspond à aucune commande connue, utiliser 'par' pour répondre automatiquement
-      const defaultCommand = commands.get('par');
-      if (defaultCommand) {
-        try {
-          await defaultCommand.execute(senderId, [messageText], pageAccessToken, sendMessage);
-        } catch (error) {
-          console.error('Error executing default command:', error);
-          sendMessage(senderId, { text: 'There was an error processing your message.' }, pageAccessToken);
-        }
-      }
-    }
-  } else {
-    // Si les commandes sont désactivées, ne pas répondre
-    sendMessage(senderId, { text: 'All commands are currently stopped.' }, pageAccessToken);
-  }
-}
+            // Envoyer la réponse au user
+            sendMessage(senderId, reply);
+        } catch (error) {
+            console.error('Error calling the API:', error);
+            sendMessage(senderId, 'Sorry, something went wrong when processing your message.');
+        }
+    }
+};
 
-module.exports = { handleMessage };
-
-    
+module.exports = handleMessage;
