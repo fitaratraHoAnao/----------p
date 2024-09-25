@@ -1,12 +1,15 @@
-const { sendMessage } = require('./sendMessage');
+const sendMessage = require('./sendMessage');
 
-function handlePostback(event, pageAccessToken) {
-  const senderId = event.sender.id;
-  const payload = event.postback.payload;
+const handlePostback = (event) => {
+    const senderId = event.sender.id;
+    const payload = event.postback.payload;
 
-  // Send a message back to the sender
-  sendMessage(senderId, { text: `You sent a postback with payload: ${payload}` }, pageAccessToken);
-}
+    // Traitement de différents types de postbacks
+    if (payload === 'GET_STARTED') {
+        sendMessage(senderId, "Welcome! Please send me an image to start.");
+    } else {
+        sendMessage(senderId, "I didn't understand that action.");
+    }
+};
 
-module.exports = { handlePostback };
-
+module.exports = handlePostback;
