@@ -1,58 +1,53 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const fs = require('fs');
-const { handleMessage } = require('./handles/handleMessage');
-const { handlePostback } = require('./handles/handlePostback');
+const handleMessage = require('./handles/handleMessage');
+const handlePostback = require('./handles/handlePostback');
+require('dotenv').config();
 
 const app = express();
+
+// Middleware
 app.use(bodyParser.json());
 
-const VERIFY_TOKEN = 'pagebot';
-const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN || fs.readFileSync('token.txt', 'utf8').trim();
-
+// Route pour le webhook de Facebook
 app.get('/webhook', (req, res) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-
-  if (mode && token) {
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('WEBHOOK_VERIFIED');
-      res.status(200).send(challenge);
-    } else {
-      res.sendStatus(403);
+    const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+    
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+    
+    if (mode && token) {
+        if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+            console.log('WEBHOOK_VERIFIED');
+            res.status(200).send(challenge);
+        } else {
+            res.sendStatus(403);
+        }
     }
-  } else {
-    res.sendStatus(400); // Bad request if required parameters are missing
-  }
 });
 
+// Route pour recevoir les messages entrants
 app.post('/webhook', (req, res) => {
-  try {
     const body = req.body;
-
+    
     if (body.object === 'page') {
-      body.entry.forEach(entry => {
-        entry.messaging.forEach(event => {
-          if (event.message) {
-            handleMessage(event, PAGE_ACCESS_TOKEN);
-          } else if (event.postback) {
-            handlePostback(event, PAGE_ACCESS_TOKEN);
-          }
+        body.entry.forEach(entry => {
+            const event = entry.messaging[0];
+            if (event.message) {
+                handleMessage(event);
+            } else if (event.postback) {
+                handlePostback(event);
+            }
         });
-      });
-
-      res.status(200).send('EVENT_RECEIVED');
+        res.status(200).send('EVENT_RECEIVED');
     } else {
-      res.sendStatus(404); // Not found for unsupported objects
+        res.sendStatus(404);
     }
-  } catch (error) {
-    console.error('Error processing webhook event:', error);
-    res.sendStatus(500); // Internal server error for unexpected issues
-  }
 });
 
-const PORT = process.env.PORT || 3000;
+// Démarrer le serveur
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
