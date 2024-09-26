@@ -75,3 +75,10 @@ async function askNewQuestion(senderId) {
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
     }
 }
+
+// Ajouter les informations de la commande
+module.exports.info = {
+    name: "quiz",  // Le nom de la commande
+    description: "Poser une question de quiz aléatoire et vérifier la réponse.",  // Description de la commande
+    usage: "Envoyez 'quiz' pour commencer un quiz. Répondez en tapant la réponse exacte à la question."  // Comment utiliser la commande
+};
