@@ -52,7 +52,7 @@ const menuCommand = (senderId, prompt) => {
 ╭─────────────⭓
 ${formattedMenu}
 ├─────⭔
-│ Page [ 1/1 ]  // Vous pouvez ajouter la logique de pagination si nécessaire
+│ Page [ 1/1 ]
 │ Actuellement, le bot a ${commandsInfo.length} commandes qui peuvent être utilisées
 │ » Tapez menu <nom de la commande> pour voir les détails de l'utilisation
 ├────────⭔
