@@ -1,28 +1,27 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage');
+const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Créer un objet pour stocker le texte et la langue cible temporairement par utilisateur
-let userSessions = {};
+// Objet pour stocker les phrases et les langues pour chaque utilisateur
+const userTranslations = {};
 
 module.exports = async (senderId, userText) => {
-    // Extraire la phrase en retirant le préfixe 'translate' et en supprimant les espaces superflus
-    const prompt = userText.slice(9).trim();
+    try {
+        // Vérifier si l'utilisateur a déjà une phrase à traduire
+        if (userTranslations[senderId]) {
+            const targetLang = userText.trim().toLowerCase(); // Langue cible de l'utilisateur
 
-    // Si la session utilisateur existe déjà et contient une phrase, on attend une langue cible
-    if (userSessions[senderId] && userSessions[senderId].phrase) {
-        const targetLang = prompt.toLowerCase().trim();
+            // Liste des codes de langue valides
+            const validLangCodes = ['en', 'fr', 'mlg', 'es', 'de', 'it']; // Ajoutez d'autres langues si nécessaire
 
-        // Vérifier que l'utilisateur a fourni un code de langue valide (2 caractères)
-        const validLangCodes = ['en', 'fr', 'mlg', 'es', 'de', 'it']; // Ajoutez d'autres langues si nécessaire
+            // Vérifier que l'utilisateur a fourni un code de langue valide
+            if (!validLangCodes.includes(targetLang)) {
+                await sendMessage(senderId, 'Veuillez fournir un code de langue valide (e.g., "en" pour anglais, "fr" pour français, "mlg" pour malgache).');
+                return;
+            }
 
-        if (!validLangCodes.includes(targetLang)) {
-            await sendMessage(senderId, 'Veuillez fournir un code de langue valide (e.g., "en" pour anglais, "fr" pour français, "mlg" pour malgache).');
-            return;
-        }
+            // Phrase à traduire
+            const phraseToTranslate = userTranslations[senderId].phrase;
 
-        const phraseToTranslate = userSessions[senderId].phrase;
-
-        try {
             // Appeler l'API MyMemory pour effectuer la traduction
             const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(phraseToTranslate)}&langpair=fr|${targetLang}`;
             const response = await axios.get(apiUrl);
@@ -35,30 +34,33 @@ module.exports = async (senderId, userText) => {
                 await sendMessage(senderId, translatedText);
 
                 // Réinitialiser la session de l'utilisateur après la traduction
-                delete userSessions[senderId];
+                delete userTranslations[senderId];
             } else {
                 await sendMessage(senderId, 'Désolé, je n\'ai pas pu obtenir la traduction de votre phrase.');
             }
-        } catch (error) {
-            console.error('Erreur lors de l\'appel à l\'API MyMemory:', error.message || error);
-            await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors de la traduction de votre phrase.');
-        }
-    } 
-    // Si l'utilisateur n'a pas encore fourni de langue cible, on commence la traduction
-    else {
-        // Vérifier si le prompt est vide
-        if (!prompt) {
-            await sendMessage(senderId, 'Veuillez fournir une phrase à traduire.');
-            return;
-        }
+        } else {
+            // Si l'utilisateur n'a pas encore fourni de phrase à traduire
+            const prompt = userText.slice(9).trim(); // Supprimer le préfixe 'translate'
 
-        // Stocker la phrase dans la session utilisateur
-        userSessions[senderId] = {
-            phrase: prompt
-        };
+            // Vérifier si le prompt est vide
+            if (!prompt) {
+                await sendMessage(senderId, 'Veuillez fournir une phrase à traduire.');
+                return;
+            }
 
-        // Demander à l'utilisateur la langue cible
-        await sendMessage(senderId, 'Dans quelle langue souhaitez-vous traduire votre message ? (e.g., "en" pour anglais, "fr" pour français, "mlg" pour malgache)');
+            // Stocker la phrase dans la session utilisateur
+            userTranslations[senderId] = {
+                phrase: prompt
+            };
+
+            // Demander à l'utilisateur la langue cible
+            await sendMessage(senderId, 'Dans quelle langue souhaitez-vous traduire votre message ? (e.g., "en" pour anglais, "fr" pour français, "mlg" pour malgache)');
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à l\'API MyMemory:', error);
+        
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre message.');
     }
 };
 
