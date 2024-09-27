@@ -42,24 +42,18 @@ module.exports = async (senderId, userText) => {
                 await sendMessage(senderId, 'Désolé, je n\'ai pas pu obtenir la traduction de votre phrase.');
             }
         } else {
-            // Si l'utilisateur n'a pas encore fourni de phrase à traduire
-            const prompt = userText.slice(9).trim(); // Supprimer le préfixe 'translate'
+            // Si c'est un nouveau message, vérifier la phrase à traduire
+            const prompt = userText.trim(); // Utiliser le texte utilisateur tel quel
 
-            // Vérifier si le prompt est vide
-            if (!prompt) {
-                await sendMessage(senderId, 'Veuillez fournir une phrase à traduire.');
-                return;
-            }
-
-            // Stocker la phrase et la langue source dans la session utilisateur
+            // Stocker la phrase et demander la langue source
             userTranslations[senderId] = {
                 phrase: prompt,
-                language: 'fr' // Ici, vous pouvez définir la langue source de manière dynamique si nécessaire
+                language: 'fr' // Définir la langue source par défaut à 'fr'
             };
 
             // Demander à l'utilisateur la langue cible
             const langList = validLangCodes.join(', ');
-            await sendMessage(senderId, `Dans quelle langue souhaitez-vous traduire votre message ? (codes disponibles : ${langList})`);
+            await sendMessage(senderId, `Quel code de langue avez-vous utilisé pour traduire votre message ? (codes disponibles : ${langList})`);
         }
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API MyMemory:', error);
