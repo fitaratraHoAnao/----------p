@@ -1,61 +1,62 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
+const sendMessage = require('../handles/sendMessage'); 
 
-// Objet pour stocker les recherches des utilisateurs
-const userDictionaryRequests = {};
+// Variable pour suivre l'état du dictionnaire
+let activeDictionaryUsers = {};
 
 module.exports = async (senderId, userText) => {
     try {
-        // Vérifier si l'utilisateur a fourni un mot à rechercher
-        const wordToLookup = userText.trim().toLowerCase(); 
-
-        // Si aucun mot n'est fourni, demander à l'utilisateur d'entrer un mot
-        if (!wordToLookup) {
-            await sendMessage(senderId, "Veuillez fournir un mot à rechercher dans le dictionnaire.");
-            return;
-        }
-
-        // URL de l'API pour chercher le mot dans le dictionnaire
-        const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(wordToLookup)}`;
-        const response = await axios.get(apiUrl);
-
-        // Vérifier si la réponse contient les informations nécessaires
-        if (response.data && response.data.length > 0) {
-            const data = response.data[0];
-            let message = `🔎 **Mot** : ${data.word}\n`;
-
-            // Ajouter la phonétique si elle existe
-            if (data.phonetic) {
-                message += `📖 **Phonétique** : ${data.phonetic}\n`;
+        // Si l'utilisateur a déjà activé le dictionnaire ou tape "dictionnaire", on l'active
+        if (userText.toLowerCase().startsWith('dictionnaire')) {
+            const word = userText.slice(12).trim();
+            if (word) {
+                await fetchAndSendDictionaryResponse(senderId, word);
+            } else {
+                await sendMessage(senderId, "Veuillez fournir un mot à rechercher.");
             }
-
-            // Ajouter les significations et exemples
-            data.meanings.forEach((meaning) => {
-                message += `\n📚 **Partie du discours** : ${meaning.partOfSpeech}\n`;
-                meaning.definitions.forEach((definition, index) => {
-                    message += `📋 **Définition ${index + 1}** : ${definition.definition}\n`;
-                    if (definition.example) {
-                        message += `💡 **Exemple** : ${definition.example}\n`;
-                    }
-                });
-            });
-
-            // Envoyer le message final à l'utilisateur
-            await sendMessage(senderId, message);
+            // Activer le mode dictionnaire pour cet utilisateur
+            activeDictionaryUsers[senderId] = true;
+        } 
+        // Si le dictionnaire est déjà activé pour cet utilisateur, traiter chaque mot sans "dictionnaire"
+        else if (activeDictionaryUsers[senderId]) {
+            const word = userText.trim();
+            await fetchAndSendDictionaryResponse(senderId, word);
         } else {
-            await sendMessage(senderId, "Désolé, je n'ai pas pu trouver de définition pour ce mot.");
+            // L'utilisateur doit d'abord activer la commande dictionnaire
+            await sendMessage(senderId, "Tapez 'dictionnaire [mot]' pour commencer la recherche.");
         }
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API Dictionary:', error);
-
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        console.error('Erreur lors de la recherche dans le dictionnaire:', error.message);
         await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors de la recherche dans le dictionnaire.');
     }
 };
 
-// Ajouter les informations de la commande
-module.exports.info = {
-    name: "dictionnaire",  // Le nom de la commande
-    description: "Recherchez un mot dans le dictionnaire et obtenez sa définition, phonétique et exemples.",  // Description de la commande
-    usage: "Envoyez 'dictionnaire <mot>' pour obtenir les informations sur le mot."  // Comment utiliser la commande
-};
+// Fonction pour appeler l'API et envoyer la réponse
+async function fetchAndSendDictionaryResponse(senderId, word) {
+    try {
+        const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
+        const response = await axios.get(apiUrl);
+
+        if (response.data && response.data.length > 0) {
+            const data = response.data[0];
+            let message = `🔎 **Mot** : ${data.word}\n`;
+
+            if (data.phonetic) {
+                message += `📖 **Phonétique** : ${data.phonetic}\n`;
+            }
+
+            data.meanings.forEach((meaning) => {
+                message += `\n📚 **Partie du discours** : ${meaning.partOfSpeech}\n`;
+                meaning.definitions.forEach((definition, index) => {
+                    message += `📋 **Définition ${index + 1}** : ${definition.definition}\n`;
+                });
+            });
+
+            await sendMessage(senderId, message);
+        } else {
+            await sendMessage(senderId, `Désolé, aucune définition trouvée pour "${word}".`);
+        }
+    } catch (error) {
+        throw new Error(`Impossible de rechercher le mot : ${word}`);
+    }
+}
