@@ -1,54 +1,55 @@
 const fs = require('fs');
 const path = require('path');
-const sendMessage = require('../handles/sendMessage');
+const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-const menuCommand = (senderId, prompt) => {
-    const [menuCmd, commandName] = prompt.split(' ').map(str => str.trim());
+module.exports = async (senderId, prompt) => {
+    const [menuCmd, commandName] = prompt.split(' ').map(str => str.trim()); // Extraire le nom de la commande (si spécifié)
 
-    // Lire les fichiers dans le répertoire commands
-    const commandFiles = fs.readdirSync(__dirname).filter(file => file.endsWith('.js'));
+    try {
+        // Lire les fichiers dans le répertoire "commands"
+        const commandFiles = fs.readdirSync(__dirname).filter(file => file.endsWith('.js'));
 
-    if (commandName) {
-        // Chercher une commande spécifique
-        const commandFile = commandFiles.find(file => file.replace('.js', '') === commandName);
+        if (commandName) {
+            // Chercher une commande spécifique
+            const commandFile = commandFiles.find(file => file.replace('.js', '') === commandName);
 
-        if (commandFile) {
-            // Charger la commande spécifique et afficher ses infos
-            const command = require(path.join(__dirname, commandFile));
-            const name = command.info ? command.info.name : commandName;
-            const description = command.info ? command.info.description : 'Pas de description disponible';
-            const usage = command.info ? command.info.usage : 'Pas d\'usage disponible';
+            if (commandFile) {
+                // Charger la commande spécifique et afficher ses infos
+                const command = require(path.join(__dirname, commandFile));
+                const name = command.info ? command.info.name : commandName;
+                const description = command.info ? command.info.description : 'Pas de description disponible';
+                const usage = command.info ? command.info.usage : 'Pas d\'usage disponible';
 
-            const reply = `
+                const reply = `
 ╭─────────────⭓
 │ Commande : ${name}
 │ Description : ${description}
 │ Usage : ${usage}
 ╰─────────────⭓`;
 
-            // Envoyer le message au user
-            sendMessage(senderId, reply);
+                // Envoyer le message au user
+                await sendMessage(senderId, reply);
+            } else {
+                // Si la commande n'est pas trouvée
+                await sendMessage(senderId, `La commande "${commandName}" n'existe pas.`);
+            }
         } else {
-            // Si la commande n'est pas trouvée
-            sendMessage(senderId, `La commande "${commandName}" n'existe pas.`);
-        }
-    } else {
-        // Afficher toutes les commandes disponibles si aucun nom de commande n'est spécifié
-        const commandsInfo = commandFiles.map(file => {
-            const command = require(path.join(__dirname, file));
-            return {
-                name: command.info ? command.info.name : file.replace('.js', ''),
-                description: command.info ? command.info.description : 'Pas de description disponible',
-                usage: command.info ? command.info.usage : 'Pas d\'usage disponible'
-            };
-        });
+            // Afficher toutes les commandes disponibles si aucun nom de commande n'est spécifié
+            const commandsInfo = commandFiles.map(file => {
+                const command = require(path.join(__dirname, file));
+                return {
+                    name: command.info ? command.info.name : file.replace('.js', ''),
+                    description: command.info ? command.info.description : 'Pas de description disponible',
+                    usage: command.info ? command.info.usage : 'Pas d\'usage disponible'
+                };
+            });
 
-        // Formater le menu général
-        const formattedMenu = commandsInfo
-            .map((cmd, index) => `│ ${index + 1}. ${cmd.name} - ${cmd.description}\n   Usage: ${cmd.usage}`)
-            .join('\n\n');
-        
-        const reply = `
+            // Formater le menu général
+            const formattedMenu = commandsInfo
+                .map((cmd, index) => `│ ${index + 1}. ${cmd.name} - ${cmd.description}\n   Usage: ${cmd.usage}`)
+                .join('\n\n');
+            
+            const reply = `
 ╭─────────────⭓
 ${formattedMenu}
 ├─────⭔
@@ -59,9 +60,18 @@ ${formattedMenu}
 │ 💕❤Bruno❤💕
 ╰─────────────⭓`;
 
-        // Envoyer le message au user
-        sendMessage(senderId, reply);
+            // Envoyer le message au user
+            await sendMessage(senderId, reply);
+        }
+    } catch (error) {
+        console.error('Erreur lors de la génération du menu:', error);
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la génération du menu.");
     }
 };
 
-module.exports = menuCommand;
+// Ajouter les informations de la commande
+module.exports.info = {
+    name: "menu",  // Le nom de la commande
+    description: "Affiche un menu avec toutes les commandes disponibles ou les détails d'une commande spécifique.",  // Description de la commande
+    usage: "Envoyez 'menu' pour voir toutes les commandes ou 'menu <nom de la commande>' pour plus de détails."  // Comment utiliser la commande
+};
