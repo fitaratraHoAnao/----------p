@@ -9,6 +9,7 @@ module.exports = async (senderId, userText) => {
         // Vérifier si l'utilisateur a déjà une phrase à traduire
         if (userTranslations[senderId]) {
             const targetLang = userText.trim().toLowerCase(); // Langue cible de l'utilisateur
+            const language = 'fr'; // Langue source, ici fixée à 'fr'
 
             // Liste des codes de langue valides
             const validLangCodes = ['en', 'fr', 'mlg', 'es', 'de', 'it']; // Ajoutez d'autres langues si nécessaire
@@ -23,7 +24,7 @@ module.exports = async (senderId, userText) => {
             const phraseToTranslate = userTranslations[senderId].phrase;
 
             // Appeler l'API MyMemory pour effectuer la traduction
-            const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(phraseToTranslate)}&langpair=fr|${targetLang}`;
+            const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(phraseToTranslate)}&langpair=${language}|${targetLang}`;
             const response = await axios.get(apiUrl);
 
             // Vérifier si la réponse API contient bien la traduction
