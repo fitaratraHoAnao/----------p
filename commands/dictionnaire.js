@@ -1,41 +1,21 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage');
-
-// Variable pour suivre l'état du dictionnaire
-let activeDictionaryUsers = {};
+const sendMessage = require('../handles/sendMessage'); 
 
 module.exports = async (senderId, userText) => {
     try {
-        // Si l'utilisateur a déjà activé le dictionnaire ou tape "dictionnaire"
-        if (userText.toLowerCase().startsWith('dictionnaire')) {
-            const word = userText.slice(12).trim();
-            if (word) {
-                await fetchAndSendDictionaryResponse(senderId, word);
-            } else {
-                await sendMessage(senderId, "Veuillez fournir un mot à rechercher.");
-            }
-            // Activer le mode dictionnaire pour cet utilisateur
-            activeDictionaryUsers[senderId] = true;
-        } 
-        // Si le dictionnaire est déjà activé pour cet utilisateur, traiter chaque mot sans "dictionnaire"
-        else if (activeDictionaryUsers[senderId]) {
-            const word = userText.trim();
-            await fetchAndSendDictionaryResponse(senderId, word);
-        } else {
-            // L'utilisateur doit d'abord activer la commande dictionnaire
-            await sendMessage(senderId, "Tapez 'dictionnaire [mot]' pour commencer la recherche.");
-        }
-    } catch (error) {
-        console.error('Erreur générale:', error.message);
-        await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors de la recherche dans le dictionnaire.');
-    }
-};
+        const wordToLookup = userText.trim().toLowerCase(); 
 
-// Fonction pour appeler l'API et envoyer la réponse
-async function fetchAndSendDictionaryResponse(senderId, word) {
-    try {
-        const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
+        if (!wordToLookup) {
+            await sendMessage(senderId, "Veuillez fournir un mot à rechercher dans le dictionnaire.");
+            return;
+        }
+
+        // URL de l'API
+        const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(wordToLookup)}`;
         const response = await axios.get(apiUrl);
+
+        // Log de la réponse API pour voir la structure
+        console.log('Réponse API:', response.data);
 
         if (response.data && response.data.length > 0) {
             const data = response.data[0];
@@ -54,10 +34,12 @@ async function fetchAndSendDictionaryResponse(senderId, word) {
 
             await sendMessage(senderId, message);
         } else {
-            await sendMessage(senderId, `Désolé, aucune définition trouvée pour "${word}".`);
+            await sendMessage(senderId, "Désolé, je n'ai pas pu trouver de définition pour ce mot.");
         }
     } catch (error) {
-        console.error(`Erreur lors de la recherche du mot "${word}":`, error.message);
+        console.error('Erreur lors de l\'appel à l\'API Dictionary:', error.response ? error.response.data : error.message);
+
+        // Envoyer un message d'erreur à l'utilisateur
         await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors de la recherche dans le dictionnaire.');
     }
-}
+};
