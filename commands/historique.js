@@ -1,46 +1,66 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-module.exports = async (senderId, args) => {
-    const searchQuery = args.join(" ");
+module.exports = async (senderId, userText) => {
+    // Extraire le nom de la personne en retirant le préfixe 'historique' et en supprimant les espaces superflus
+    const person = userText.slice(10).trim(); // 10 caractères pour 'historique '
 
-    // Vérifier si l'utilisateur a fourni une requête de recherche
-    if (!searchQuery) {
-        return sendMessage(senderId, "Veuillez fournir une requête de recherche (par exemple, histoire de la guerre anglo-népalaise).");
+    // Vérifier si le nom est vide
+    if (!person) {
+        await sendMessage(senderId, 'Veuillez fournir un nom de personne pour obtenir des informations historiques.');
+        return;
     }
 
     try {
-        // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Recherche en cours, veuillez patienter...");
+        // Envoyer un message de confirmation que la requête est en cours de traitement
+        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Appeler l'API Wikipedia pour récupérer les informations historiques
-        const response = await axios.get(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchQuery)}`);
+        // Appeler l'API Wikipedia avec le nom fourni
+        const apiUrl = `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(person)}`;
+        const response = await axios.get(apiUrl);
 
-        // Vérifier la réponse de l'API
-        if (response.data.title && response.data.extract) {
-            const title = response.data.title;
-            const extract = response.data.extract;
-            const url = response.data.content_urls.desktop.page; // Récupérer l'URL de la page
-            const thumbnail = response.data.thumbnail ? response.data.thumbnail.source : ""; // Récupérer l'URL de la miniature si elle existe
+        // Récupérer les informations pertinentes de l'API
+        const { title, extract, thumbnail, content_urls } = response.data;
 
-            let message = `Informations sur "${title}":\n${extract}\n\nPour plus d'informations, consultez [ici](${url}).`;
-            if (thumbnail) {
-                message += `\n![${title}](${thumbnail})`; // Ajouter l'image à la réponse si disponible
-            }
-
-            await sendMessage(senderId, message);
-        } else {
-            await sendMessage(senderId, `Aucune information trouvée pour "${searchQuery}".`);
+        // Vérifier si la réponse contient un extrait
+        if (!extract) {
+            await sendMessage(senderId, 'Désolé, je n\'ai pas pu trouver d\'informations sur cette personne.');
+            return;
         }
+
+        // Construire le message de réponse avec les informations
+        let reply = `**${title}**\n\n${extract}\n\n[En savoir plus ici](${content_urls.desktop.page})`;
+
+        // Ajouter une image si disponible
+        if (thumbnail && thumbnail.source) {
+            reply += `\n![Image](${thumbnail.source})`;
+        }
+
+        // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Envoyer la réponse à l'utilisateur
+        await sendMessage(senderId, reply);
     } catch (error) {
-        console.error("Erreur lors de la récupération des informations historiques :", error);
-        await sendMessage(senderId, "Une erreur est survenue lors de la récupération des informations historiques.");
+        console.error('Erreur lors de l\'appel à l\'API Wikipedia :', error);
+
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        if (error.response) {
+            // Erreur de réponse de l'API
+            await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre demande. (Erreur: ' + error.response.status + ')');
+        } else if (error.request) {
+            // Erreur de requête
+            await sendMessage(senderId, 'Désolé, je n\'ai pas pu atteindre le service. Vérifiez votre connexion Internet.');
+        } else {
+            // Autres erreurs
+            await sendMessage(senderId, 'Une erreur inconnue s\'est produite. Veuillez réessayer.');
+        }
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "historique",  // Le nom de la commande
-    description: "Fournit des informations historiques à partir de Wikipedia.",  // Description de la commande
-    usage: "Envoyez 'historique <terme>' pour obtenir des informations historiques."  // Comment utiliser la commande
+    description: "Obtenez des informations historiques sur une personne.",  // Description de la commande
+    usage: "Envoyez 'historique <nom>' pour obtenir des informations."  // Comment utiliser la commande
 };
