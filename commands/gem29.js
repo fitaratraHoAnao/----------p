@@ -1,24 +1,37 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage');
+const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-const gem29Command = async (senderId, userText) => {
-    const prompt = userText.slice(6).trim(); // Enlever 'gem29 ' et enlever les espaces vides
+module.exports = async (senderId, userText) => {
+    // Extraire le prompt en retirant le préfixe 'gem29' et en supprimant les espaces superflus
+    const prompt = userText.slice(6).trim();
 
     // Vérifier si le prompt est vide
     if (!prompt) {
-        sendMessage(senderId, 'Veuillez fournir une question ou un sujet pour que je puisse vous aider.');
+        await sendMessage(senderId, 'Veuillez fournir une question ou un sujet pour que je puisse vous aider.');
         return;
     }
 
     try {
-        const response = await axios.get(`https://gem2-9b-it-njiv.vercel.app/api?ask=${encodeURIComponent(prompt)}`);
-        const reply = response.data.response; // Assurez-vous que votre API renvoie 'response'.
+        // Envoyer un message de confirmation que la requête est en cours de traitement
+        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Envoyer la réponse à l'utilisateur
-        sendMessage(senderId, reply);
+        // Appeler l'API Gem29 avec le prompt fourni
+        const apiUrl = `https://gem2-9b-it-njiv.vercel.app/api?ask=${encodeURIComponent(prompt)}`;
+        const response = await axios.get(apiUrl);
+
+        // Récupérer la réponse de l'API
+        const reply = response.data.response;
+
+        // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Envoyer la réponse de l'API à l'utilisateur
+        await sendMessage(senderId, reply);
     } catch (error) {
-        console.error('Error calling the gem29 API:', error);
-        sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question.');
+        console.error('Erreur lors de l\'appel à l\'API Gem29:', error);
+
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question.');
     }
 };
 
@@ -28,5 +41,3 @@ module.exports.info = {
     description: "Poser une question ou un sujet, et obtenir une réponse générée via l'API Gem29.",  // Description de la commande
     usage: "Envoyez 'gem29 <votre question>' pour obtenir une réponse via l'API."  // Comment utiliser la commande
 };
-
-module.exports = gem29Command;
