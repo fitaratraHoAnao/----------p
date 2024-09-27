@@ -5,7 +5,8 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 const userTranslations = {};
 
 // Liste des codes de langue valides
-const validLangCodes = ['🇸🇦 ar', '🇧🇩 bn', '🇨🇦 ca', '🇨🇿 cs', '🇩🇰 da', '🇩🇪 de', '🇬🇷 el', '🇬🇧 en', '🇪🇸 es', '🇪🇪 et', '🇮🇷 fa', '🇫🇮 fi', '🇫🇷 fr', '🇮🇪 ga', '🇮🇳 gu', '🇮🇱 he', '🇮🇳 hi', '🇭🇷 hr', '🇭🇺 hu', '🇮🇩 id', '🇮🇹 it', '🇯🇵 ja', '🇮🇩 jw', '🇮🇳 kn', '🇰🇷 ko', '🇻🇦 la', '🇱🇻 lv', '🇲🇰 mk', '🇮🇳 ml', '🇮🇳 mr', '🇲🇾 ms', '🇲🇹 mt', '🇳🇵 ne', '🇳🇱 nl', '🇳🇴 no', '🇵🇱 pl', '🇵🇹 pt', '🇮🇳 pa', '🇷🇴 ro', '🇷🇺 ru', '🇱🇰 si', '🇸🇰 sk', '🇸🇮 sl', '🇸🇪 sv', '🇹🇿 sw', '🇮🇳 ta', '🇮🇳 te', '🇹🇭 th', '🇹🇷 tr', '🇺🇦 uk', '🇵🇰 ur', '🇻🇳 vi', '🏴 cy', '🇿🇦 xh', '🇮🇱 yi', '🇿🇦 zu'];
+const validLangCodes = ['ar', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fa', 'fi', 'fr', 'ga', 'gu', 'he', 'hi', 'hr', 'hu', 'id', 'it', 'ja', 'jw', 'kn', 'ko', 'la', 'lv', 'mk', 'ml', 'mr', 'ms', 'mt', 'ne', 'nl', 'no', 'pl', 'pt', 'pa', 'ro', 'ru', 'si', 'sk', 'sl', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk', 'ur', 'vi', 'cy', 'xh', 'yi', 'zu']; // Liste des codes de langue
+
 module.exports = async (senderId, userText) => {
     try {
         // Vérifier si l'utilisateur a déjà une phrase à traduire
@@ -73,3 +74,4 @@ module.exports.info = {
     usage: "Envoyez 'translate <votre phrase>' pour commencer la traduction."  // Comment utiliser la commande
 };
 
+              
