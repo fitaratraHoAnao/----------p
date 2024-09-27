@@ -4,19 +4,21 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 // Objet pour stocker les phrases et les langues pour chaque utilisateur
 const userTranslations = {};
 
+// Liste des codes de langue valides
+const validLangCodes = ['en', 'fr', 'mlg', 'es', 'de', 'it']; // Ajoutez d'autres langues si nécessaire
+
 module.exports = async (senderId, userText) => {
     try {
         // Vérifier si l'utilisateur a déjà une phrase à traduire
         if (userTranslations[senderId]) {
             const targetLang = userText.trim().toLowerCase(); // Langue cible de l'utilisateur
-            const language = 'fr'; // Langue source, ici fixée à 'fr'
-
-            // Liste des codes de langue valides
-            const validLangCodes = ['en', 'fr', 'mlg', 'es', 'de', 'it']; // Ajoutez d'autres langues si nécessaire
+            const language = userTranslations[senderId].language; // Langue source stockée dynamiquement
 
             // Vérifier que l'utilisateur a fourni un code de langue valide
             if (!validLangCodes.includes(targetLang)) {
-                await sendMessage(senderId, 'Veuillez fournir un code de langue valide (e.g., "en" pour anglais, "fr" pour français, "mlg" pour malgache).');
+                // Créer une liste des codes de langue disponibles
+                const langList = validLangCodes.join(', ');
+                await sendMessage(senderId, `Veuillez fournir un code de langue valide : ${langList}.`);
                 return;
             }
 
@@ -49,13 +51,15 @@ module.exports = async (senderId, userText) => {
                 return;
             }
 
-            // Stocker la phrase dans la session utilisateur
+            // Stocker la phrase et la langue source dans la session utilisateur
             userTranslations[senderId] = {
-                phrase: prompt
+                phrase: prompt,
+                language: 'fr' // Ici, vous pouvez définir la langue source de manière dynamique si nécessaire
             };
 
             // Demander à l'utilisateur la langue cible
-            await sendMessage(senderId, 'Dans quelle langue souhaitez-vous traduire votre message ? (e.g., "en" pour anglais, "fr" pour français, "mlg" pour malgache)');
+            const langList = validLangCodes.join(', ');
+            await sendMessage(senderId, `Dans quelle langue souhaitez-vous traduire votre message ? (codes disponibles : ${langList})`);
         }
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API MyMemory:', error);
