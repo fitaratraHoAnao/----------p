@@ -1,35 +1,58 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-module.exports = async (senderId, args) => {
+module.exports = async (senderId, userText) => {
+    // Extraire le prompt en retirant le préfixe 'gemma7' et en supprimant les espaces superflus
+    const prompt = userText.slice(6).trim(); // 6 caractères pour 'gemma7'
+
+    // Vérifier si le prompt est vide
+    if (!prompt) {
+        await sendMessage(senderId, 'Veuillez fournir une question ou un sujet pour que je puisse vous aider.');
+        return;
+    }
+
     try {
-        // Vérifier si l'utilisateur a fourni un prompt
-        if (!args[0]) {
-            return sendMessage(senderId, "Veuillez fournir un prompt pour Llama.");
-        }
+        // Envoyer un message de confirmation que la requête est en cours de traitement
+        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Préparer le prompt pour l'API
-        const prompt = encodeURIComponent(args.join(" "));
-        const apiUrl = `https://create-by-bruno.vercel.app/?ask=${prompt}`;
-
-        // Appeler l'API
+        // Appeler l'API avec le prompt fourni
+        const apiUrl = `https://create-by-bruno.vercel.app/?ask=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
 
-        // Vérifier la réponse de l'API
-        if (response.data && response.data.response) {
-            await sendMessage(senderId, response.data.response);
-        } else {
-            await sendMessage(senderId, "Impossible d'obtenir une réponse de Mistral.");
+        // Récupérer la réponse de l'API
+        const reply = response.data.response; // Modifiez en fonction de la structure de la réponse de votre API
+
+        // Vérifier si la réponse est vide
+        if (!reply) {
+            await sendMessage(senderId, 'Désolé, je n\'ai pas pu générer de réponse. Essayez avec un autre sujet.');
+            return;
         }
+
+        // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Envoyer la réponse de l'API à l'utilisateur
+        await sendMessage(senderId, reply);
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API gemma7:', error.message);
-        await sendMessage(senderId, "Une erreur s'est produite lors du traitement de votre demande.");
+        console.error('Erreur lors de l\'appel à l\'API :', error);
+
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        if (error.response) {
+            // Erreur de réponse de l'API
+            await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question. (Erreur: ' + error.response.status + ')');
+        } else if (error.request) {
+            // Erreur de requête
+            await sendMessage(senderId, 'Désolé, je n\'ai pas pu atteindre le service. Vérifiez votre connexion Internet.');
+        } else {
+            // Autres erreurs
+            await sendMessage(senderId, 'Une erreur inconnue s\'est produite. Veuillez réessayer.');
+        }
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "gemma7",  // Le nom de la commande
-    description: "Interroge l'API Llama pour obtenir une réponse.",  // Description de la commande
-    usage: "Envoyez 'gemma7 <votre prompt>' pour obtenir une réponse."  // Comment utiliser la commande
+    description: "Envoyer une question ou un sujet pour obtenir une réponse générée par l'IA.",  // Description de la commande
+    usage: "Envoyez 'gemma7 <votre question>' pour obtenir une réponse."  // Comment utiliser la commande
 };
