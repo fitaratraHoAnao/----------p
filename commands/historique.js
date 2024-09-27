@@ -1,11 +1,10 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
+const sendMessage = require('../handles/sendMessage');
 
 module.exports = async (senderId, userText) => {
     // Extraire le nom de la personne en retirant le préfixe 'historique' et en supprimant les espaces superflus
-    const person = userText.slice(10).trim(); // Récupérer le nom après 'historique'
+    let person = userText.slice(10).trim().toLowerCase();
 
-    // Vérifier si le nom est vide
     if (!person) {
         await sendMessage(senderId, 'Veuillez fournir un nom de personne pour obtenir des informations historiques.');
         return;
@@ -13,18 +12,33 @@ module.exports = async (senderId, userText) => {
 
     try {
         // Envoyer un message de confirmation que la requête est en cours de traitement
-        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
+        await sendMessage(senderId, "Recherche en cours...");
 
-        // Appeler l'API Wikipedia avec le nom fourni
-        const apiUrl = `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(person)}`;
-        const response = await axios.get(apiUrl);
+        // Appeler l'API de recherche de Wikipédia avec le nom fourni
+        const searchUrl = `https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(person)}&format=json`;
+        const searchResponse = await axios.get(searchUrl);
+        
+        const searchResults = searchResponse.data.query.search;
 
+        // Vérifier s'il y a des résultats de recherche
+        if (!searchResults || searchResults.length === 0) {
+            await sendMessage(senderId, `Désolé, je n'ai trouvé aucune information pour "${person}".`);
+            return;
+        }
+
+        // Récupérer le premier résultat de la recherche (le plus pertinent)
+        const firstResult = searchResults[0];
+        const pageTitle = firstResult.title;
+
+        // Appeler l'API pour obtenir le résumé de la page correspondante
+        const summaryUrl = `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`;
+        const summaryResponse = await axios.get(summaryUrl);
+        
         // Récupérer les informations pertinentes de l'API
-        const { title, extract, thumbnail, content_urls } = response.data;
+        const { title, extract, thumbnail, content_urls } = summaryResponse.data;
 
-        // Vérifier si la réponse contient un extrait
         if (!extract) {
-            await sendMessage(senderId, 'Désolé, je n\'ai pas pu trouver d\'informations sur cette personne.');
+            await sendMessage(senderId, `Désolé, je n'ai trouvé aucune information sur "${pageTitle}".`);
             return;
         }
 
@@ -36,15 +50,12 @@ module.exports = async (senderId, userText) => {
             reply += `\n![Image](${thumbnail.source})`;
         }
 
-        // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Envoyer la réponse à l'utilisateur
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Attendre 2 secondes pour un délai naturel
         await sendMessage(senderId, reply);
+
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API Wikipedia :', error);
 
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
         if (error.response) {
             await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre demande. (Erreur: ' + error.response.status + ')');
         } else if (error.request) {
@@ -55,9 +66,8 @@ module.exports = async (senderId, userText) => {
     }
 };
 
-// Ajouter les informations de la commande
 module.exports.info = {
-    name: "historique",  // Le nom de la commande
-    description: "Obtenez des informations historiques sur une personne.",  // Description de la commande
-    usage: "Envoyez 'historique <nom>' pour obtenir des informations."  // Comment utiliser la commande
+    name: "historique",
+    description: "Obtenez des informations historiques sur une personne.",
+    usage: "Envoyez 'historique <nom>' pour obtenir des informations."
 };
