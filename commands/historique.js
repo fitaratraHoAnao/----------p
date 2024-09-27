@@ -20,7 +20,15 @@ module.exports = async (senderId, args) => {
         if (response.data.title && response.data.extract) {
             const title = response.data.title;
             const extract = response.data.extract;
-            await sendMessage(senderId, `Informations sur "${title}" :\n${extract}`);
+            const url = response.data.content_urls.desktop.page; // Récupérer l'URL de la page
+            const thumbnail = response.data.thumbnail ? response.data.thumbnail.source : ""; // Récupérer l'URL de la miniature si elle existe
+
+            let message = `Informations sur "${title}":\n${extract}\n\nPour plus d'informations, consultez [ici](${url}).`;
+            if (thumbnail) {
+                message += `\n![${title}](${thumbnail})`; // Ajouter l'image à la réponse si disponible
+            }
+
+            await sendMessage(senderId, message);
         } else {
             await sendMessage(senderId, `Aucune information trouvée pour "${searchQuery}".`);
         }
