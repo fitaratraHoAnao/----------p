@@ -1,12 +1,12 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage'); 
+const sendMessage = require('../handles/sendMessage');
 
 // Variable pour suivre l'état du dictionnaire
 let activeDictionaryUsers = {};
 
 module.exports = async (senderId, userText) => {
     try {
-        // Si l'utilisateur a déjà activé le dictionnaire ou tape "dictionnaire", on l'active
+        // Si l'utilisateur a déjà activé le dictionnaire ou tape "dictionnaire"
         if (userText.toLowerCase().startsWith('dictionnaire')) {
             const word = userText.slice(12).trim();
             if (word) {
@@ -26,7 +26,7 @@ module.exports = async (senderId, userText) => {
             await sendMessage(senderId, "Tapez 'dictionnaire [mot]' pour commencer la recherche.");
         }
     } catch (error) {
-        console.error('Erreur lors de la recherche dans le dictionnaire:', error.message);
+        console.error('Erreur générale:', error.message);
         await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors de la recherche dans le dictionnaire.');
     }
 };
@@ -57,6 +57,7 @@ async function fetchAndSendDictionaryResponse(senderId, word) {
             await sendMessage(senderId, `Désolé, aucune définition trouvée pour "${word}".`);
         }
     } catch (error) {
-        throw new Error(`Impossible de rechercher le mot : ${word}`);
+        console.error(`Erreur lors de la recherche du mot "${word}":`, error.message);
+        await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors de la recherche dans le dictionnaire.');
     }
 }
