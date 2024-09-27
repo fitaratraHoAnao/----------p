@@ -12,8 +12,8 @@ module.exports = async (senderId, userText) => {
     if (userSessions[senderId] && userSessions[senderId].phrase) {
         const targetLang = prompt.toLowerCase().trim();
 
-        // Vérifier que l'utilisateur a fourni un code de langue valide (2 ou 3 caractères)
-        if (!targetLang || targetLang.length < 2 || targetLang.length > 3) {
+        // Vérifier que l'utilisateur a fourni un code de langue valide (exactement 2 ou 3 caractères)
+        if (targetLang.length < 2 || targetLang.length > 3) {
             await sendMessage(senderId, 'Veuillez fournir un code de langue valide (e.g., "en" pour anglais, "fr" pour français, "mlg" pour malgache).');
             return;
         }
