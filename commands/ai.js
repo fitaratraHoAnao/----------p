@@ -38,6 +38,6 @@ module.exports = async (senderId, userText) => {
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "ai",  // Le nom de la commande
-    description: "Envoyer une question ou un sujet pour obtenir une réponse générée par l'IA via l'API Nashbot.",  // Description de la commande
+    description: "Envoyer une question ou un sujet pour obtenir une réponse générée par l'IA.",  // Description de la commande
     usage: "Envoyez 'ai <votre question>' pour obtenir une réponse."  // Comment utiliser la commande
 };
