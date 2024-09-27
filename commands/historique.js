@@ -3,7 +3,7 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, userText) => {
     // Extraire le nom de la personne en retirant le préfixe 'historique' et en supprimant les espaces superflus
-    const person = userText.slice(10).trim(); // 10 caractères pour 'historique '
+    const person = userText.slice(10).trim(); // Récupérer le nom après 'historique'
 
     // Vérifier si le nom est vide
     if (!person) {
@@ -46,13 +46,10 @@ module.exports = async (senderId, userText) => {
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
         if (error.response) {
-            // Erreur de réponse de l'API
             await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre demande. (Erreur: ' + error.response.status + ')');
         } else if (error.request) {
-            // Erreur de requête
             await sendMessage(senderId, 'Désolé, je n\'ai pas pu atteindre le service. Vérifiez votre connexion Internet.');
         } else {
-            // Autres erreurs
             await sendMessage(senderId, 'Une erreur inconnue s\'est produite. Veuillez réessayer.');
         }
     }
