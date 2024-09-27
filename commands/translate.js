@@ -8,12 +8,14 @@ module.exports = async (senderId, userText) => {
     // Extraire la phrase en retirant le préfixe 'translate' et en supprimant les espaces superflus
     const prompt = userText.slice(9).trim();
 
-    // Si la session utilisateur existe déjà, cela signifie qu'on attend une langue cible
+    // Si la session utilisateur existe déjà et contient une phrase, on attend une langue cible
     if (userSessions[senderId] && userSessions[senderId].phrase) {
         const targetLang = prompt.toLowerCase().trim();
 
-        // Vérifier que l'utilisateur a fourni un code de langue valide (exactement 2 ou 3 caractères)
-        if (targetLang.length < 2 || targetLang.length > 3) {
+        // Vérifier que l'utilisateur a fourni un code de langue valide (2 caractères)
+        const validLangCodes = ['en', 'fr', 'mlg', 'es', 'de', 'it']; // Ajoutez d'autres langues si nécessaire
+
+        if (!validLangCodes.includes(targetLang)) {
             await sendMessage(senderId, 'Veuillez fournir un code de langue valide (e.g., "en" pour anglais, "fr" pour français, "mlg" pour malgache).');
             return;
         }
