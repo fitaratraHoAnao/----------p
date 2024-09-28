@@ -1,6 +1,4 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 module.exports = async (senderId, userText) => {
@@ -27,25 +25,14 @@ module.exports = async (senderId, userText) => {
         // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Envoyer les informations sur le personnage
+        // Construire le message de réponse avec l'image et l'info
         const reply = `**Nom :** ${name}\n**Info :** ${info}`;
+        
+        // Envoyer les informations textuelles à l'utilisateur
         await sendMessage(senderId, reply);
-
-        // Télécharger l'image
-        const imageResponse = await axios.get(image, { responseType: 'arraybuffer' });
         
-        // Créer un chemin pour sauvegarder temporairement l'image
-        const imagePath = path.join(__dirname, 'tempImage.jpg');
-        
-        // Écrire l'image dans le système de fichiers
-        fs.writeFileSync(imagePath, imageResponse.data);
-
         // Envoyer l'image à l'utilisateur
-        await sendMessage(senderId, { files: [imagePath] });
-
-        // Supprimer le fichier image temporaire après envoi
-        fs.unlinkSync(imagePath);
-        
+        await sendMessage(senderId, { files: [image] });  // Si sendMessage gère les fichiers
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API Waifu:', error);
 
