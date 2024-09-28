@@ -70,7 +70,7 @@ module.exports = async (senderId, userText) => {
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "translate",  // Le nom de la commande
-    description: "Traduisez une phrase dans la langue de votre choix en utilisant l'API MyMemory.",  // Description de la commande
+    description: "Traduisez une phrase dans la langue de votre choix.",  // Description de la commande
     usage: "Envoyez 'translate <votre phrase>' pour commencer la traduction."  // Comment utiliser la commande
 };
 
