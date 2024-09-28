@@ -111,7 +111,7 @@ async function askNewQuestion(senderId) {
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "quiz",  // Le nom de la commande
+    name: "quiz2",  // Le nom de la commande
     description: "Poser une question de quiz aléatoire et vérifier la réponse.",  // Description de la commande
-    usage: "Envoyez 'quiz' pour commencer un quiz. Répondez en tapant la réponse exacte à la question."  // Comment utiliser la commande
+    usage: "Envoyez 'quiz2' pour commencer un quiz. Répondez en tapant la réponse exacte à la question."  // Comment utiliser la commande
 };
