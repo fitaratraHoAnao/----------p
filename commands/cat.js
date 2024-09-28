@@ -2,24 +2,27 @@ const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 const sendCatImages = async (senderId, count) => {
-    const catImageUrls = []; // Tableau pour stocker les URLs des images de chat
+    // Envoyer un message de confirmation que la requête est en cours de traitement
+    await sendMessage(senderId, `Message reçu, je prépare ${count} images de chat...`);
 
-    // Récupérer les URLs des images de chat
+    // Récupérer et envoyer les images de chat une par une avec un délai d'une seconde
     for (let i = 0; i < count; i++) {
-        const apiUrl = 'https://api.thecatapi.com/v1/images/search';
         try {
+            const apiUrl = 'https://api.thecatapi.com/v1/images/search';
             const response = await axios.get(apiUrl);
             const catImageUrl = response.data[0].url; // Obtenir l'URL de l'image
-            catImageUrls.push(catImageUrl); // Ajouter l'URL au tableau
+
+            // Envoyer l'image à l'utilisateur
+            await sendMessage(senderId, { files: [catImageUrl] }); // Envoi de l'image en tant que fichier
+
+            // Attendre 1 seconde avant d'envoyer la prochaine image
+            await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
             console.error('Erreur lors de l\'appel à l\'API The Cat API:', error);
             await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors de la récupération des images de chat.');
             return; // Sortir de la fonction en cas d'erreur
         }
     }
-
-    // Envoyer toutes les images de chat en une seule fois
-    await sendMessage(senderId, { files: catImageUrls });
 };
 
 module.exports = async (senderId, userText) => {
@@ -28,7 +31,6 @@ module.exports = async (senderId, userText) => {
 
     if (!isNaN(requestCount) && requestCount > 0) {
         // L'utilisateur a envoyé un nombre, on utilise ce nombre pour envoyer les images
-        await sendMessage(senderId, `Message reçu, je prépare ${requestCount} images de chat...`);
         await sendCatImages(senderId, requestCount); // Appel de la fonction pour envoyer les images
         return;
     }
@@ -47,8 +49,7 @@ module.exports = async (senderId, userText) => {
         // Limiter le nombre maximum d'images à 10 (par exemple)
         const maxCats = Math.min(numCats, 10);
 
-        // Envoyer un message de confirmation que la requête est en cours de traitement
-        await sendMessage(senderId, `Message reçu, je prépare ${maxCats} images de chat...`);
+        // Envoyer toutes les images de chat
         await sendCatImages(senderId, maxCats); // Appel de la fonction pour envoyer les images
     } else {
         await sendMessage(senderId, 'Veuillez d\'abord utiliser la commande "cat <nombre>" pour demander des images de chat ou envoyer simplement un nombre.');
