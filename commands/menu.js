@@ -4,6 +4,8 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, prompt) => {
     const [menuCmd, commandName] = prompt.split(' ').map(str => str.trim()); // Extraire le nom de la commande (si spécifié)
+    const page = parseInt(menuCmd.replace('menu', '').trim()) || 1; // Obtenir le numéro de page (default à 1)
+    const commandsPerPage = 10; // Nombre maximal de commandes par page
 
     try {
         // Lire les fichiers dans le répertoire "commands"
@@ -44,20 +46,27 @@ module.exports = async (senderId, prompt) => {
                 };
             });
 
-            // Formater le menu général
-            const formattedMenu = commandsInfo
-                .map((cmd, index) => `│ ${index + 1}. ${cmd.name} - ${cmd.description}\n   Usage: ${cmd.usage}`)
+            // Calculer le nombre de pages
+            const totalCommands = commandsInfo.length;
+            const totalPages = Math.ceil(totalCommands / commandsPerPage);
+            const startIndex = (page - 1) * commandsPerPage;
+            const endIndex = Math.min(startIndex + commandsPerPage, totalCommands);
+            const paginatedCommands = commandsInfo.slice(startIndex, endIndex);
+
+            // Formater le menu pour la page actuelle
+            const formattedMenu = paginatedCommands
+                .map((cmd, index) => `│ ${startIndex + index + 1}. ${cmd.name} - ${cmd.description}\n   Usage: ${cmd.usage}`)
                 .join('\n\n');
 
             const reply = `
 ╭─────────────⭓
-│ 🇲🇬 Voici les menus disponibles 🇲🇬:
+│ 🇲🇬 Menus disponibles 🇲🇬:
 │ 
 ${formattedMenu}
 ├─────⭔
-│ Page [ 1/1 ]
-│ Actuellement, le bot a ${commandsInfo.length} commandes qui peuvent être utilisées
-│ » Tapez menu <nom de la commande> pour voir les détails de l'utilisation
+│ Page [ ${page}/${totalPages} ]
+│ Actuellement, le bot a ${totalCommands} commandes qui peuvent être utilisées
+│ » Tapez 'menu <numéro>' pour voir la page correspondante
 ├────────⭔
 │ 💕❤Bruno❤💕
 ╰─────────────⭓`;
@@ -77,3 +86,4 @@ module.exports.info = {
     description: "Affiche un menu avec toutes les commandes disponibles ou les détails d'une commande spécifique.",  // Description de la commande
     usage: "Envoyez 'menu' pour voir toutes les commandes ou 'menu <nom de la commande>' pour plus de détails."  // Comment utiliser la commande
 };
+    
