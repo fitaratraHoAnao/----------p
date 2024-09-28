@@ -26,8 +26,14 @@ module.exports = async (senderId, userText) => {
             // Envoyer le nom du personnage
             await sendMessage(senderId, `Nom : ${name}`);
 
+            // Attendre 1 seconde avant d'envoyer l'image pour un délai naturel
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
             // Envoyer l'image
             await sendMessage(senderId, { files: [image] });
+
+            // Attendre 1 seconde avant d'envoyer les informations supplémentaires
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Envoyer les informations supplémentaires
             await sendMessage(senderId, `Info : ${info}`);
