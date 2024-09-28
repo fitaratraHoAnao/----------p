@@ -48,9 +48,11 @@ module.exports = async (senderId, prompt) => {
             const formattedMenu = commandsInfo
                 .map((cmd, index) => `│ ${index + 1}. ${cmd.name} - ${cmd.description}\n   Usage: ${cmd.usage}`)
                 .join('\n\n');
-            
+
             const reply = `
 ╭─────────────⭓
+│ 🇲🇬 Voici les menus disponibles 🇲🇬:
+│ 
 ${formattedMenu}
 ├─────⭔
 │ Page [ 1/1 ]
