@@ -4,6 +4,13 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 // Objet pour stocker les questions et les réponses pour chaque utilisateur
 const userQuizzes = {};
 
+// Fonction pour décoder les entités HTML (ex: &#039;, &quot;)
+function decodeHTMLEntities(text) {
+    return text.replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+               .replace(/&quot;/g, '"')
+               .replace(/&#039;/g, "'");
+}
+
 module.exports = async (senderId, prompt) => {
     try {
         // Vérifier si l'utilisateur a déjà un quiz en cours
@@ -59,10 +66,10 @@ async function askNewQuestion(senderId) {
         // Vérifier si l'API a renvoyé une question avec succès
         if (response.data.response_code === 0) {
             // Récupérer la question et les réponses
-            const quizData = response.data.results[0];
-            const question = quizData.question;
-            const correctAnswer = quizData.correct_answer;
-            const incorrectAnswers = quizData.incorrect_answers;
+            let quizData = response.data.results[0];
+            let question = decodeHTMLEntities(quizData.question);
+            let correctAnswer = decodeHTMLEntities(quizData.correct_answer);
+            let incorrectAnswers = quizData.incorrect_answers.map(answer => decodeHTMLEntities(answer));
 
             // Créer un tableau des réponses possibles
             const allAnswers = [correctAnswer, ...incorrectAnswers];
@@ -104,7 +111,7 @@ async function askNewQuestion(senderId) {
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "quiz2",  // Le nom de la commande
+    name: "quiz",  // Le nom de la commande
     description: "Poser une question de quiz aléatoire et vérifier la réponse.",  // Description de la commande
-    usage: "Envoyez 'quiz2' pour commencer un quiz. Répondez en tapant la réponse exacte à la question."  // Comment utiliser la commande
+    usage: "Envoyez 'quiz' pour commencer un quiz. Répondez en tapant la réponse exacte à la question."  // Comment utiliser la commande
 };
