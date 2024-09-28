@@ -10,9 +10,12 @@ module.exports = async (senderId, prompt) => {
         if (userQuizzes[senderId]) {
             const userAnswer = prompt.trim(); // Réponse de l'utilisateur
             const correctAnswer = userQuizzes[senderId].correctAnswer;
+            const shuffledAnswers = userQuizzes[senderId].shuffledAnswers;
 
-            // Vérifier la réponse de l'utilisateur
-            if (userAnswer === correctAnswer) {
+            // Vérifier si l'utilisateur a entré un numéro valide
+            const userAnswerIndex = parseInt(userAnswer, 10) - 1; // Convertir la réponse en index (1-based -> 0-based)
+
+            if (!isNaN(userAnswerIndex) && shuffledAnswers[userAnswerIndex] === correctAnswer) {
                 await sendMessage(senderId, "🎉 Réponse correcte !");
             } else {
                 await sendMessage(senderId, `❌ Réponse incorrecte. La bonne réponse est : ${correctAnswer}.`);
