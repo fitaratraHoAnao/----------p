@@ -69,7 +69,7 @@ async function askNewQuestion(senderId) {
             const formattedAnswers = translatedAnswers.map((answer, index) => `${index + 1}. ${answer}`).join('\n');
 
             // Attendre 2 secondes avant d'envoyer la réponse
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Envoyer la question et les réponses mélangées à l'utilisateur
             await sendMessage(senderId, `Voici votre question de quiz :\n${translatedQuestion}\n\nChoisissez une réponse :\n${formattedAnswers}`);
