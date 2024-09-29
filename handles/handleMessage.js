@@ -32,12 +32,12 @@ const handleMessage = async (event) => {
     // Si l'utilisateur envoie "stop", désactiver la commande active
     if (message.text.toLowerCase() === 'stop') {
         activeCommands[senderId] = null;
-        await sendMessage(senderId, "La commande est désactivée. Gemini reprend.");
+        await sendMessage(senderId, "Toutes les commandes sont désactivées. Vous pouvez maintenant envoyer d'autres messages.");
         return;
     }
 
-    // Vérifier s'il existe une commande active pour cet utilisateur
-    if (activeCommands[senderId]) {
+    // Vérifier s'il existe une commande active pour cet utilisateur (sauf pour la commande "menu")
+    if (activeCommands[senderId] && activeCommands[senderId] !== 'menu') {
         const activeCommand = activeCommands[senderId];
         await commands[activeCommand](senderId, message.text); // Exécuter la commande active
         return;
@@ -48,8 +48,16 @@ const handleMessage = async (event) => {
     for (const commandName in commands) {
         if (userText.startsWith(commandName)) {
             const commandPrompt = userText.replace(commandName, '').trim();
-            activeCommands[senderId] = commandName; // Activer cette commande pour les futurs messages
-            await commands[commandName](senderId, commandPrompt); // Appeler la commande
+
+            if (commandName === 'menu') {
+                // Ne pas activer la commande "menu" (pas de besoin de "stop" après)
+                await commands[commandName](senderId, commandPrompt); // Appeler directement la commande menu
+            } else {
+                // Activer les autres commandes
+                activeCommands[senderId] = commandName; // Activer cette commande pour les futurs messages
+                await commands[commandName](senderId, commandPrompt); // Appeler la commande
+            }
+
             return; // Sortir après l'exécution de la commande
         }
     }
