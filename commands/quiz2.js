@@ -4,13 +4,6 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 // Objet pour stocker les questions et les réponses pour chaque utilisateur
 const userQuizzes = {};
 
-// Fonction pour décoder les entités HTML (ex: &#039;, &quot;)
-function decodeHTMLEntities(text) {
-    return text.replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
-               .replace(/&quot;/g, '"')
-               .replace(/&#039;/g, "'");
-}
-
 module.exports = async (senderId, prompt) => {
     try {
         // Vérifier si l'utilisateur a déjà un quiz en cours
@@ -19,12 +12,10 @@ module.exports = async (senderId, prompt) => {
             const correctAnswer = userQuizzes[senderId].correctAnswer;
             const shuffledAnswers = userQuizzes[senderId].shuffledAnswers;
 
-            // Convertir la réponse de l'utilisateur en index (1-based -> 0-based)
-            const userAnswerIndex = parseInt(userAnswer, 10) - 1;
+            // Vérifier si l'utilisateur a entré un numéro valide
+            const userAnswerIndex = parseInt(userAnswer, 10) - 1; // Convertir la réponse en index (1-based -> 0-based)
 
-            // Vérifier que la réponse donnée est correcte
-            if (!isNaN(userAnswerIndex) && 
-                shuffledAnswers[userAnswerIndex].toLowerCase().trim() === correctAnswer.toLowerCase().trim()) {
+            if (!isNaN(userAnswerIndex) && shuffledAnswers[userAnswerIndex] === correctAnswer) {
                 await sendMessage(senderId, "🎉 Réponse correcte !");
             } else {
                 await sendMessage(senderId, `❌ Réponse incorrecte. La bonne réponse est : ${correctAnswer}.`);
@@ -34,7 +25,7 @@ module.exports = async (senderId, prompt) => {
             return await askNewQuestion(senderId);
         }
 
-        // Si l'utilisateur n'a pas de quiz en cours, démarrer un nouveau quiz
+        // Appeler l'API Open Trivia Database pour obtenir une question
         return await askNewQuestion(senderId);
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API Open Trivia Database:', error);
@@ -43,19 +34,6 @@ module.exports = async (senderId, prompt) => {
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
     }
 };
-
-// Fonction pour appeler l'API MyMemory pour traduire un texte en français
-async function translateToFrench(text) {
-    const myMemoryApiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|fr`;
-    try {
-        const response = await axios.get(myMemoryApiUrl);
-        const translatedText = response.data.responseData.translatedText;
-        return translatedText;
-    } catch (error) {
-        console.error("Erreur lors de l'appel à l'API MyMemory:", error);
-        return text; // Retourner le texte original en cas d'erreur
-    }
-}
 
 async function askNewQuestion(senderId) {
     try {
@@ -66,29 +44,26 @@ async function askNewQuestion(senderId) {
         // Vérifier si l'API a renvoyé une question avec succès
         if (response.data.response_code === 0) {
             // Récupérer la question et les réponses
-            let quizData = response.data.results[0];
-            let question = decodeHTMLEntities(quizData.question);
-            let correctAnswer = decodeHTMLEntities(quizData.correct_answer);
-            let incorrectAnswers = quizData.incorrect_answers.map(answer => decodeHTMLEntities(answer));
+            const quizData = response.data.results[0];
+            const question = quizData.question;
+            const correctAnswer = quizData.correct_answer;
+            const incorrectAnswers = quizData.incorrect_answers;
 
             // Créer un tableau des réponses possibles
             const allAnswers = [correctAnswer, ...incorrectAnswers];
             const shuffledAnswers = allAnswers.sort(() => Math.random() - 0.5); // Mélanger les réponses
 
+            // Traduire la question et les réponses avec MyMemory, avec découpage si nécessaire
+            const translatedQuestion = await translateTextWithLimit(question, 'en', 'fr');
+            const translatedAnswers = await Promise.all(shuffledAnswers.map(answer => translateTextWithLimit(answer, 'en', 'fr')));
+            const translatedCorrectAnswer = await translateTextWithLimit(correctAnswer, 'en', 'fr');
+
             // Stocker les données du quiz pour cet utilisateur
             userQuizzes[senderId] = {
-                question: question,
-                correctAnswer: correctAnswer,
-                shuffledAnswers: shuffledAnswers,
+                question: translatedQuestion,
+                correctAnswer: translatedCorrectAnswer,
+                shuffledAnswers: translatedAnswers,
             };
-
-            // Traduire la question en français
-            const translatedQuestion = await translateToFrench(question);
-
-            // Traduire les réponses également en français
-            const translatedAnswers = await Promise.all(
-                shuffledAnswers.map(async (answer) => await translateToFrench(answer))
-            );
 
             // Formater la réponse à envoyer à l'utilisateur
             const formattedAnswers = translatedAnswers.map((answer, index) => `${index + 1}. ${answer}`).join('\n');
@@ -109,9 +84,29 @@ async function askNewQuestion(senderId) {
     }
 }
 
+// Fonction pour découper le texte en morceaux de 500 caractères maximum
+function splitTextIntoChunks(text, maxLength = 500) {
+    const chunks = [];
+    for (let i = 0; i < text.length; i += maxLength) {
+        chunks.push(text.slice(i, i + maxLength));
+    }
+    return chunks;
+}
+
+// Fonction pour traduire du texte avec MyMemory, en découpant si nécessaire
+async function translateTextWithLimit(text, fromLang, toLang) {
+    const chunks = splitTextIntoChunks(text, 500); // Découper le texte en morceaux de 500 caractères maximum
+    const translatedChunks = await Promise.all(chunks.map(async (chunk) => {
+        const translateUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${fromLang}|${toLang}`;
+        const response = await axios.get(translateUrl);
+        return response.data.responseData.translatedText;
+    }));
+    return translatedChunks.join(' '); // Recombiner les morceaux traduits
+}
+
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "quiz2",  // Le nom de la commande
+    name: "quiz",  // Le nom de la commande
     description: "Poser une question de quiz aléatoire et vérifier la réponse.",  // Description de la commande
-    usage: "Envoyez 'quiz2' pour commencer un quiz. Répondez en tapant la réponse exacte à la question."  // Comment utiliser la commande
+    usage: "Envoyez 'quiz' pour commencer un quiz. Répondez en tapant le numéro de la réponse."  // Comment utiliser la commande
 };
