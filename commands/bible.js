@@ -11,9 +11,9 @@ module.exports = async (senderId) => {
         const response = await axios.get(apiUrl);
 
         // Vérifier si la réponse contient bien les informations nécessaires
-        if (response.data && response.data.reference && response.data.text) {
-            const verse = response.data;
-            const message = `${verse.reference}:\n\n${verse.text}\n\nTraduction: ${verse.translation_name}`;
+        if (response.data && response.data.reference && response.data.verses && response.data.translation_name) {
+            const verseData = response.data.verses[0];
+            const message = `${verseData.book_name} ${verseData.chapter}:${verseData.verse}:\n\n${verseData.text}\n\nTraduction: ${response.data.translation_name}`;
 
             // Attendre 2 secondes avant d'envoyer la réponse
             await new Promise(resolve => setTimeout(resolve, 2000));
