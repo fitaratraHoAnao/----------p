@@ -1,6 +1,26 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage');
 
+// Fonction pour découper le texte en morceaux de 500 caractères maximum
+function splitTextIntoChunks(text, maxLength = 500) {
+    const chunks = [];
+    for (let i = 0; i < text.length; i += maxLength) {
+        chunks.push(text.slice(i, i + maxLength));
+    }
+    return chunks;
+}
+
+// Fonction pour traduire du texte avec MyMemory, en découpant si nécessaire
+async function translateTextWithLimit(text, fromLang, toLang) {
+    const chunks = splitTextIntoChunks(text, 500); // Découper le texte en morceaux de 500 caractères maximum
+    const translatedChunks = await Promise.all(chunks.map(async (chunk) => {
+        const translateUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${fromLang}|${toLang}`;
+        const response = await axios.get(translateUrl);
+        return response.data.responseData.translatedText;
+    }));
+    return translatedChunks.join(' '); // Recombiner les morceaux traduits
+}
+
 module.exports = async (senderId, userText) => {
     // Extraire le nom de la personne en retirant le préfixe 'historique' et en supprimant les espaces superflus
     let person = userText.slice(10).trim().toLowerCase();
@@ -15,9 +35,9 @@ module.exports = async (senderId, userText) => {
         await sendMessage(senderId, "Recherche en cours...");
 
         // Appeler l'API de recherche de Wikipédia avec le nom fourni
-        const searchUrl = `https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(person)}&format=json`;
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(person)}&format=json`;
         const searchResponse = await axios.get(searchUrl);
-        
+
         const searchResults = searchResponse.data.query.search;
 
         // Vérifier s'il y a des résultats de recherche
@@ -31,9 +51,9 @@ module.exports = async (senderId, userText) => {
         const pageTitle = firstResult.title;
 
         // Appeler l'API pour obtenir le résumé de la page correspondante
-        const summaryUrl = `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`;
+        const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`;
         const summaryResponse = await axios.get(summaryUrl);
-        
+
         // Récupérer les informations pertinentes de l'API
         const { title, extract, thumbnail, content_urls } = summaryResponse.data;
 
@@ -42,8 +62,12 @@ module.exports = async (senderId, userText) => {
             return;
         }
 
-        // Construire le message de réponse avec les informations
-        let reply = `**${title}**\n\n${extract}\n\n[En savoir plus ici](${content_urls.desktop.page})`;
+        // Traduire le titre et le résumé avec MyMemory
+        const translatedTitle = await translateTextWithLimit(title, 'en', 'fr');
+        const translatedExtract = await translateTextWithLimit(extract, 'en', 'fr');
+
+        // Construire le message de réponse avec les informations traduites
+        let reply = `**${translatedTitle}**\n\n${translatedExtract}\n\n[En savoir plus ici](${content_urls.desktop.page})`;
 
         // Ajouter une image si disponible
         if (thumbnail && thumbnail.source) {
