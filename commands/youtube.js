@@ -10,7 +10,7 @@ module.exports = async (senderId, userText, event) => {
     }
 
     const query = args.join(" ");
-    const apiKey = 'VOTRE_YOUTUBE_API_KEY'; // Remplacez par votre clé API YouTube
+    const apiKey = 'AIzaSyCbeDS39uH7GqzitZpfMNDi9x2bpptLH6A'; // Remplacez par votre clé API YouTube
     const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&key=${apiKey}`;
 
     try {
