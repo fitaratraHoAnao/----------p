@@ -37,7 +37,7 @@ module.exports = async (senderId, userText) => {
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "Bruno",  // Le nom de la commande
+    name: "bruno",  // Le nom de la commande
     description: "Poser une question ou un sujet, et obtenir une réponse générée via l'API Gem29.",  // Description de la commande
-    usage: "Envoyez 'Bruno <votre question>' pour obtenir une réponse via l'API."  // Comment utiliser la commande
+    usage: "Envoyez 'bruno <votre question>' pour obtenir une réponse via l'API."  // Comment utiliser la commande
 };
