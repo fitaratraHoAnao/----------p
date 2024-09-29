@@ -16,7 +16,7 @@ module.exports = async (senderId, userText) => {
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
         // Appeler l'API Gem29 avec le prompt fourni
-        const apiUrl = `https://discussion-continue-gem29.vercel.app/api?ask=${encodeURIComponent(prompt)}`;
+        const apiUrl = `https://llama3-8b-8192.vercel.app/?ask=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
 
         // Récupérer la réponse de l'API
