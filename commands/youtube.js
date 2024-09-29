@@ -1,69 +1,38 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
+const sendMessage = require('../handles/sendMessage'); // Assurez-vous que sendMessage est correctement importé
 
 module.exports = async (senderId, userText, event) => {
-    // Extraire le prompt en retirant le préfixe 'ai' et en supprimant les espaces superflus
-    const pr = await global.utils.getPrefix(event.threadID) + this.config.name;
-    const args = userText.split(" "); // Extraire les arguments
+    // Vérifiez si l'utilisateur a fourni une requête YouTube
+    const args = userText.split(" ").slice(1);
+    
+    if (!args.length) {
+        return sendMessage(event.threadID, "Veuillez fournir un titre de vidéo YouTube ou un lien.");
+    }
+
+    const query = args.join(" ");
+    const apiKey = 'VOTRE_YOUTUBE_API_KEY'; // Remplacez par votre clé API YouTube
+    const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&key=${apiKey}`;
 
     try {
-        const type = args[0]?.toLowerCase();
-        if (!type || !['music'].includes(type)) { // Limiter à la recherche de musique
-            return message.reply(`Utilisation invalide. Veuillez utiliser : ${pr} music <titre>\n\nexemple : ${pr} music metamorphosis`);
+        const response = await axios.get(apiUrl);
+
+        if (response.data.items.length > 0) {
+            const video = response.data.items[0];
+            const videoUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+            const message = `Voici la vidéo trouvée :\n${video.snippet.title}\n${videoUrl}`;
+            sendMessage(event.threadID, message);
+        } else {
+            sendMessage(event.threadID, "Aucune vidéo trouvée pour cette recherche.");
         }
-
-        const title = args.slice(1).join(" ");
-        if (!title) return message.reply("Veuillez ajouter un titre.");
-
-        const { data } = await axios.get(`https://apiv3-2l3o.onrender.com/yts?title=${title}`);
-        const videos = data.videos.slice(0, 6);
-        
-        if (videos.length === 0) {
-            return message.reply("Aucune vidéo trouvée pour ce titre.");
-        }
-
-        // Envoyer la liste des vidéos
-        const { messageID } = await message.reply({
-            body: videos.map((vid, i) => `${i + 1}. ${vid.title}\nDurée: ${vid.duration}\n`).join("\n") + "\nVeuillez choisir un numéro de vidéo en répondant 1 à 6.",
-            attachment: await Promise.all(videos.map(video => global.utils.getStreamFromURL(video.thumb)))
-        });
-
-        // Enregistrer la réponse du message pour le traitement ultérieur
-        global.GoatBot.onReply.set(messageID, {
-            commandName: this.config.name,
-            messageID,
-            videos,
-            type,
-            sender: event.senderID
-        });
-
     } catch (error) {
-        message.reply(error.response?.data?.error || error.message);
+        console.error('Erreur lors de la requête à l\'API YouTube:', error.message);
+        sendMessage(event.threadID, "Une erreur est survenue lors de la recherche de la vidéo YouTube.");
     }
 };
 
-// Gestion de la réponse de l'utilisateur
-global.GoatBot.onReply.set(messageID, async (event) => {
-    const { videos, sender, messageID, type } = Reply;
-    if (event.senderID !== sender) return;
-
-    const choice = parseInt(event.body, 10);
-    if (isNaN(choice) || choice < 1 || choice > videos.length) {
-        return message.reply("Veuillez répondre avec un numéro entre 1 et 6 uniquement.");
-    }
-
-    const { url, title, duration } = videos[choice - 1];
-    const { data: { url: link } } = await axios.get(`https://apiv3-2l3o.onrender.com/ytb?link=${url}&type=${type}`);
-
-    message.unsend(messageID);
-    message.reply({
-        body: `${title} (${duration})`,
-        attachment: await global.utils.getStreamFromURL(link)
-    });
-});
-// Ajouter les informations de la commande
+// Informations sur la commande
 module.exports.info = {
-    name: "youtube",  // Le nom de la commande
-    description: "commande pour chercher de vidéo sur YouTube.",  // Description de la commande
-    usage: "Envoyez 'youtube <votre research>' pour obtenir une réponse."  // Comment utiliser la commande
+    name: "youtube",  // Le nom de la commande
+    description: "Recherche une vidéo sur YouTube en utilisant un titre ou un lien.",  // Description de la commande
+    usage: "Envoyez 'youtube <titre>' pour rechercher une vidéo sur YouTube."  // Comment utiliser la commande
 };
