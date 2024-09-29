@@ -44,7 +44,7 @@ module.exports = async (senderId) => {
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "bibleTrad",  // Le nom de la commande
+    name: "bible",  // Le nom de la commande
     description: "Envoyer un verset biblique aléatoire et le traduire en français",  // Description de la commande
-    usage: "Envoyez 'bibleTrad' pour recevoir un verset biblique aléatoire traduit en français."  // Comment utiliser la commande
+    usage: "Envoyez 'bible' pour recevoir un verset biblique aléatoire traduit en français."  // Comment utiliser la commande
 };
