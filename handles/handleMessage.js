@@ -67,7 +67,7 @@ const handleMessage = async (event) => {
     const customId = senderId;
 
     try {
-        const response = await axios.post('https://gemini-ap-espa-bruno.onrender.com/api/gemini', {
+        const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
             prompt,
             customId
         });
