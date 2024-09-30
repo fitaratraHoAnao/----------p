@@ -18,15 +18,29 @@ module.exports = async (senderId, prompt) => {
             const type = userSelections[senderId].type;
 
             // Appeler l'API pour récupérer le lien de téléchargement
-            const { data: { url: downloadLink } } = await axios.get(`https://apiv3-2l3o.onrender.com/ytb?link=${video.url}&type=${type}`);
+            try {
+                const apiResponse = await axios.get(`https://apiv3-2l3o.onrender.com/ytb?link=${video.url}&type=${type}`);
 
-            // Envoyer le lien de la vidéo à l'utilisateur
-            await sendMessage(senderId, {
-                text: `${video.title} (${video.duration})\nVoici le lien : ${downloadLink}`
-            });
+                // Vérifier si la réponse contient bien le lien
+                if (!apiResponse.data || !apiResponse.data.url) {
+                    console.error('Erreur API: pas de lien dans la réponse', apiResponse.data);
+                    return sendMessage(senderId, "Désolé, une erreur s'est produite lors de la récupération du lien vidéo.");
+                }
 
-            // Nettoyer la sélection après envoi
-            delete userSelections[senderId];
+                const downloadLink = apiResponse.data.url;
+
+                // Envoyer le lien de la vidéo à l'utilisateur
+                await sendMessage(senderId, {
+                    text: `${video.title} (${video.duration})\nVoici le lien : ${downloadLink}`
+                });
+
+                // Nettoyer la sélection après envoi
+                delete userSelections[senderId];
+            } catch (error) {
+                console.error('Erreur lors de l\'appel à l\'API pour récupérer la vidéo:', error.message);
+                await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la recherche de la vidéo.");
+            }
+
         } else {
             const args = prompt.trim().split(/\s+/);
             const type = args[0]?.toLowerCase();
