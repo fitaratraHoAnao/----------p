@@ -18,17 +18,8 @@ console.log('Les commandes suivantes ont été chargées :', Object.keys(command
 // Stocker les commandes actives pour chaque utilisateur
 const activeCommands = {};
 
-// Générer un message dynamique pour les images
-const generateImageResponseMessage = () => {
-    const messages = [
-        "✨ Merci pour l'image ! N'hésitez pas à poser des questions sur cette image ! 🌃",
-        "🌟 Super image ! Posez-moi des questions à propos de celle-ci ! 🖼️",
-        "🚀 Génial ! Vous pouvez maintenant poser vos questions sur cette image. 📷",
-        "🎨 Merci pour l'image ! Posez des questions si vous le souhaitez ! 🌇",
-    ];
-    // Choisir un message aléatoirement
-    return messages[Math.floor(Math.random() * messages.length)];
-};
+// Stocker l'historique de l'image pour chaque utilisateur
+const imageHistory = {};
 
 const handleMessage = async (event) => {
     const senderId = event.sender.id;
@@ -58,9 +49,11 @@ const handleMessage = async (event) => {
     // Gérer les images envoyées par l'utilisateur
     if (message.attachments && message.attachments[0].type === 'image') {
         const imageUrl = message.attachments[0].payload.url; // URL de l'image envoyée
-        const dynamicMessage = generateImageResponseMessage(); // Générer un message dynamique
-        await sendMessage(senderId, dynamicMessage);
+        await sendMessage(senderId, "Merci pour l'image ! Un instant pendant que je la traite...");
         try {
+            // Sauvegarder l'image dans l'historique pour cet utilisateur
+            imageHistory[senderId] = imageUrl;
+
             // Appeler l'API pour traiter l'image
             const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
                 link: imageUrl,
@@ -70,45 +63,50 @@ const handleMessage = async (event) => {
             await sendMessage(senderId, `Résultat de l'image : ${reply}`);
         } catch (error) {
             console.error('Erreur lors de l\'analyse de l\'image :', error);
+            await sendMessage(senderId, 'Désolé, je n\'ai pas pu traiter l\'image.');
         }
         return;
     }
 
     // Gérer les messages textuels
     if (message.text) {
-        // Vérifier les commandes dynamiques
-        const userText = message.text.trim().toLowerCase();
-        for (const commandName in commands) {
-            if (userText.startswith(commandName)) {
-                const commandPrompt = userText.replace(commandName, '').trim();
+        // Vérifier s'il y a une image dans l'historique pour cet utilisateur
+        const imageUrl = imageHistory[senderId];
 
-                if (commandName === 'menu') {
-                    // Ne pas activer la commande "menu" (pas de besoin de "stop" après)
-                    await commands[commandName](senderId, commandPrompt); // Appeler directement la commande menu
-                } else {
-                    // Activer les autres commandes
-                    activeCommands[senderId] = commandName; // Activer cette commande pour les futurs messages
-                    await commands[commandName](senderId, commandPrompt); // Appeler la commande
-                }
+        // Si une image est dans l'historique et que l'utilisateur pose une question, traiter la question avec l'image
+        if (imageUrl) {
+            const prompt = message.text;
+            const customId = senderId;
 
-                return; // Sortir après l'exécution de la commande
+            try {
+                // Appeler l'API pour traiter la question en tenant compte de l'image
+                const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
+                    prompt,
+                    customId,
+                    link: imageUrl // Envoyer l'image avec la question
+                });
+                const reply = response.data.message;
+                await sendMessage(senderId, reply);
+            } catch (error) {
+                console.error('Error calling the API:', error);
+                await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre message.');
             }
-        }
+        } else {
+            // Si aucune image n'est présente, traiter le texte seul
+            const prompt = message.text;
+            const customId = senderId;
 
-        // Si aucune commande ne correspond, appeler l'API pour traiter le texte
-        const prompt = message.text;
-        const customId = senderId;
-
-        try {
-            const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
-                prompt,
-                customId
-            });
-            const reply = response.data.message;
-            await sendMessage(senderId, reply);
-        } catch (error) {
-            console.error('Error calling the API:', error);
-            await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre message.');
+            try {
+                const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
+                    prompt,
+                    customId
+                });
+                const reply = response.data.message;
+                await sendMessage(senderId, reply);
+            } catch (error) {
+                console.error('Error calling the API:', error);
+                await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre message.');
+            }
         }
     }
 };
