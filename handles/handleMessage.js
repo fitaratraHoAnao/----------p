@@ -70,7 +70,7 @@ const handleMessage = async (event) => {
             }
         } catch (error) {
             console.error('Erreur lors de l\'analyse de l\'image :', error);
-            await sendMessage(senderId, 'Une erreur s\'est produite lors du traitement de l\'image.');
+            // Ne rien faire ici pour éviter d'envoyer un message d'erreur après le message de remerciement
         }
         return;
     }
