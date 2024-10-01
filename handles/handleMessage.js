@@ -30,52 +30,74 @@ const handleMessage = async (event) => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Si l'utilisateur envoie "stop", désactiver la commande active
-    if (message.text.toLowerCase() === 'stop') {
+    if (message.text && message.text.toLowerCase() === 'stop') {
         activeCommands[senderId] = null;
         await sendMessage(senderId, "Toutes les commandes sont désactivées. Vous pouvez maintenant envoyer d'autres messages.");
         return;
     }
 
-    // Vérifier s'il existe une commande active pour cet utilisateur (sauf pour la commande "menu")
-    if (activeCommands[senderId] && activeCommands[senderId] !== 'menu') {
+    // Vérifier s'il existe une commande active pour cet utilisateur
+    if (activeCommands[senderId]) {
         const activeCommand = activeCommands[senderId];
         await commands[activeCommand](senderId, message.text); // Exécuter la commande active
         return;
     }
 
-    // Vérifier les commandes dynamiques
-    const userText = message.text.trim().toLowerCase();
-    for (const commandName in commands) {
-        if (userText.startsWith(commandName)) {
-            const commandPrompt = userText.replace(commandName, '').trim();
-
-            if (commandName === 'menu') {
-                // Ne pas activer la commande "menu" (pas de besoin de "stop" après)
-                await commands[commandName](senderId, commandPrompt); // Appeler directement la commande menu
-            } else {
-                // Activer les autres commandes
-                activeCommands[senderId] = commandName; // Activer cette commande pour les futurs messages
-                await commands[commandName](senderId, commandPrompt); // Appeler la commande
-            }
-
-            return; // Sortir après l'exécution de la commande
+    // Gérer les images envoyées par l'utilisateur
+    if (message.attachments && message.attachments[0].type === 'image') {
+        const imageUrl = message.attachments[0].payload.url; // URL de l'image envoyée
+        await sendMessage(senderId, "Merci pour l'image ! Un instant pendant que je la traite...");
+        try {
+            // Appeler l'API pour traiter l'image
+            const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
+                link: imageUrl,
+                customId: senderId
+            });
+            const reply = response.data.message; // Réponse de l'API
+            await sendMessage(senderId, `Résultat de l'image : ${reply}`);
+        } catch (error) {
+            console.error('Erreur lors de l\'analyse de l\'image :', error);
+            await sendMessage(senderId, 'Désolé, je n\'ai pas pu traiter l\'image.');
         }
+        return;
     }
 
-    // Si aucune commande ne correspond, appeler l'API Gemini par défaut
-    const prompt = message.text;
-    const customId = senderId;
+    // Gérer les messages textuels
+    if (message.text) {
+        // Vérifier les commandes dynamiques
+        const userText = message.text.trim().toLowerCase();
+        for (const commandName in commands) {
+            if (userText.startsWith(commandName)) {
+                const commandPrompt = userText.replace(commandName, '').trim();
 
-    try {
-        const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
-            prompt,
-            customId
-        });
-        const reply = response.data.message;
-        sendMessage(senderId, reply);
-    } catch (error) {
-        console.error('Error calling the API:', error);
-        sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre message.');
+                if (commandName === 'menu') {
+                    // Ne pas activer la commande "menu" (pas de besoin de "stop" après)
+                    await commands[commandName](senderId, commandPrompt); // Appeler directement la commande menu
+                } else {
+                    // Activer les autres commandes
+                    activeCommands[senderId] = commandName; // Activer cette commande pour les futurs messages
+                    await commands[commandName](senderId, commandPrompt); // Appeler la commande
+                }
+
+                return; // Sortir après l'exécution de la commande
+            }
+        }
+
+        // Si aucune commande ne correspond, appeler l'API pour traiter le texte
+        const prompt = message.text;
+        const customId = senderId;
+
+        try {
+            const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
+                prompt,
+                customId
+            });
+            const reply = response.data.message;
+            await sendMessage(senderId, reply);
+        } catch (error) {
+            console.error('Error calling the API:', error);
+            await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre message.');
+        }
     }
 };
 
