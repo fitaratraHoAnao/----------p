@@ -21,18 +21,13 @@ const activeCommands = {};
 // Stocker l'historique de l'image pour chaque utilisateur
 const imageHistory = {};
 
-const handleMessage = async (event, api) => {  // Ajout de `api` pour envoyer des réactions
+const handleMessage = async (event, api) => {
     const senderId = event.sender.id;
     const message = event.message;
 
     // Réagir au message avec l'emoji ✅
-    if (message && event.messageID) {
-        try {
-            // Utilisation de messageID pour identifier le message
-            await api.setMessageReaction("✅", event.messageID);  // Ajoute la réaction "✅" au message
-        } catch (error) {
-            console.error('Erreur lors de l\'ajout de la réaction:', error);
-        }
+    if (message.text) {
+        await api.setMessageReaction("✅", event.messageID, true);  // Réaction automatique ✅
     }
 
     // Message d'attente
