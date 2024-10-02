@@ -1,22 +1,6 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Fonction pour découper une chaîne en segments de 500 caractères
-const splitText = (text, maxLength = 500) => {
-    let result = [];
-    for (let i = 0; i < text.length; i += maxLength) {
-        result.push(text.slice(i, i + maxLength));
-    }
-    return result;
-};
-
-// Fonction pour traduire chaque segment de texte en utilisant l'API MyMemory
-const translateText = async (text) => {
-    const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|fr`;
-    const response = await axios.get(apiUrl);
-    return response.data.responseData.translatedText;
-};
-
 // Mappage des signes astrologiques en anglais vers le français
 const signTranslations = {
     aries: 'bélier',
@@ -33,14 +17,49 @@ const signTranslations = {
     pisces: 'poissons'
 };
 
+// Inverser les traductions pour permettre de reconnaître les signes en français
+const frenchToEnglishSigns = Object.fromEntries(
+    Object.entries(signTranslations).map(([en, fr]) => [fr, en])
+);
+
+// Fonction pour découper une chaîne en segments de 500 caractères
+const splitText = (text, maxLength = 500) => {
+    let result = [];
+    for (let i = 0; i < text.length; i += maxLength) {
+        result.push(text.slice(i, i + maxLength));
+    }
+    return result;
+};
+
+// Fonction pour traduire chaque segment de texte en utilisant l'API MyMemory
+const translateText = async (text) => {
+    const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|fr`;
+    const response = await axios.get(apiUrl);
+    return response.data.responseData.translatedText;
+};
+
 // Fonction principale
-module.exports = async (senderId, sign) => {
+module.exports = async (senderId, messageBody) => {
     try {
         // Nettoyer l'entrée de l'utilisateur
-        sign = sign.trim().toLowerCase();
+        let sign = messageBody.trim().toLowerCase();
 
-        // Liste des signes astrologiques valides
-        const validSigns = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
+        // Si l'utilisateur envoie simplement "horoscope", envoyer la liste des signes astrologiques
+        if (sign === 'horoscope') {
+            const signList = Object.entries(signTranslations)
+                .map(([en, fr]) => `${en}: '${fr}'`)
+                .join('\n');
+            await sendMessage(senderId, `Voici les listes des horoscopes du jour :\n${signList}`);
+            return;
+        }
+
+        // Vérifier si l'utilisateur a envoyé un signe astrologique en français ou en anglais
+        if (frenchToEnglishSigns[sign]) {
+            sign = frenchToEnglishSigns[sign];  // Convertir en version anglaise
+        }
+
+        // Liste des signes astrologiques valides (en anglais)
+        const validSigns = Object.keys(signTranslations);
 
         // Vérifier si le signe est valide
         if (!validSigns.includes(sign)) {
@@ -100,5 +119,5 @@ module.exports = async (senderId, sign) => {
 module.exports.info = {
     name: "horoscope",  // Le nom de la commande
     description: "Obtenez votre horoscope du jour selon votre signe astrologique.",  // Description de la commande
-    usage: "Envoyez 'horoscope <signe>' pour obtenir l'horoscope de votre signe (par exemple : horoscope aries)."  // Comment utiliser la commande
+    usage: "Envoyez 'horoscope' pour obtenir la liste des signes disponibles, ou 'horoscope <signe>' pour obtenir l'horoscope du jour."  // Comment utiliser la commande
 };
