@@ -23,16 +23,16 @@ module.exports = async (senderId, userText) => {
         console.log('Réponse de l\'API:', response.data);
 
         // Vérifier si les données sont présentes dans la réponse
+        if (!response.data || !response.data.lyrics || !response.data.title || !response.data.artist) {
+            await sendMessage(senderId, "Désolé, je n'ai pas trouvé les paroles de cette chanson.");
+            return;
+        }
+
+        // Extraire les paroles, le titre, l'artiste et l'image
         const lyrics = response.data.lyrics;
         const title = response.data.title;
         const artist = response.data.artist;
         const imageUrl = response.data.image;
-
-        // Si les données ne sont pas trouvées, envoyer un message d'erreur
-        if (!title || !artist || !lyrics) {
-            await sendMessage(senderId, "Désolé, je n'ai pas trouvé les paroles de cette chanson.");
-            return;
-        }
 
         // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
         await new Promise(resolve => setTimeout(resolve, 2000));
