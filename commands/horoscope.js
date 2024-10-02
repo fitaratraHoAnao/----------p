@@ -3,17 +3,18 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, chosenZodiac) => {
     try {
-        // Envoyer un message de confirmation que le message a été reçu
+        // Vérification du signe du zodiaque
+        if (!chosenZodiac || !chosenZodiac.sign) {
+            // Si aucun signe n'est fourni
+            await sendMessage(senderId, "S'il vous plaît, fournissez un signe astrologique valide.");
+            return;
+        }
+
+        // Envoi d'un message pour confirmer que la requête a bien été reçue
         await sendMessage(senderId, "Je cherche votre horoscope...");
 
         // Obtenir la date actuelle au format YYYY-MM-DD
         const todayDate = new Date().toISOString().split('T')[0]; // Format de la date: YYYY-MM-DD
-
-        // Vérification du signe du zodiaque
-        if (!chosenZodiac || !chosenZodiac.sign) {
-            await sendMessage(senderId, "S'il vous plaît, fournissez un signe astrologique valide.");
-            return;
-        }
 
         // Mettre le signe du zodiaque en minuscule pour correspondre au format attendu par l'API
         const sign = chosenZodiac.sign.toLowerCase();
@@ -59,4 +60,3 @@ module.exports.info = {
     description: "Obtenez votre horoscope quotidien.",  // Description de la commande
     usage: "Envoyez 'horoscope <signe>' pour obtenir l'horoscope du jour pour un signe du zodiaque."  // Comment utiliser la commande
 };
-        
