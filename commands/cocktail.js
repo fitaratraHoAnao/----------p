@@ -1,4 +1,5 @@
 const axios = require('axios'); // Importation de la bibliothèque axios pour effectuer des requêtes HTTP
+const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 // Fonction pour traduire du texte de l'anglais vers le français en utilisant l'API MyMemory
 async function translateText(text) {
@@ -60,7 +61,7 @@ module.exports = async (senderId, message) => {
       }
 
       // Envoie le message traduit à l'utilisateur
-      sendMessage(senderId, translatedMessage);  // Assurez-vous que cette fonction est définie ailleurs
+      sendMessage(senderId, translatedMessage);  // Envoie le message
     } else {
       // Envoie un message d'erreur si aucun cocktail n'a été récupéré
       sendMessage(senderId, "Impossible de récupérer un cocktail pour le moment.");
