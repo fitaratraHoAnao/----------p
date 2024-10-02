@@ -10,11 +10,18 @@ module.exports = async (senderId, sign) => {
             return;
         }
 
+        // Obtenir la date du jour au format AAAA-MM-JJ
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0'); // Mois commence à 0, donc on ajoute 1
+        const day = String(today.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+
         // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Je prépare votre horoscope...");
+        await sendMessage(senderId, "Je prépare votre horoscope pour la date du " + formattedDate + "...");
 
         // Construire l'URL de l'API avec le signe et la date du jour
-        const apiUrl = `https://ohmanda.com/api/horoscope/${sign.toLowerCase()}?date=2024-10-02`;
+        const apiUrl = `https://ohmanda.com/api/horoscope/${sign.toLowerCase()}?date=${formattedDate}`;
         const response = await axios.get(apiUrl);
 
         // Vérifier que la réponse contient les informations attendues
