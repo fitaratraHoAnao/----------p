@@ -6,10 +6,12 @@ module.exports = async (senderId, sign) => {
         // Nettoyer l'entrée de l'utilisateur : supprimer les espaces et convertir en minuscules
         sign = sign.trim().toLowerCase();
 
-        // Vérifier si le signe est valide
+        // Liste des signes astrologiques valides
         const validSigns = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
+
+        // Vérifier si le signe est valide
         if (!validSigns.includes(sign)) {
-            await sendMessage(senderId, "Désolé, je ne reconnais pas ce signe. Essayez avec un signe valide (par exemple : aries, taurus, etc.).");
+            await sendMessage(senderId, "Désolé, je ne reconnais pas ce signe. Essayez avec un signe valide (par exemple : aries, taurus, gemini, etc.).");
             return;
         }
 
@@ -21,7 +23,7 @@ module.exports = async (senderId, sign) => {
         const formattedDate = `${year}-${month}-${day}`;
 
         // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Je prépare votre horoscope pour la date du " + formattedDate + "...");
+        await sendMessage(senderId, `Je prépare votre horoscope pour la date du ${formattedDate} et le signe ${sign}...`);
 
         // Construire l'URL de l'API avec le signe et la date du jour
         const apiUrl = `https://ohmanda.com/api/horoscope/${sign}?date=${formattedDate}`;
@@ -36,7 +38,7 @@ module.exports = async (senderId, sign) => {
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Envoyer l'horoscope à l'utilisateur
-            await sendMessage(senderId, `Voici votre horoscope pour ${sign} :\n${horoscope}`);
+            await sendMessage(senderId, `Voici votre horoscope pour ${sign.charAt(0).toUpperCase() + sign.slice(1)} :\n${horoscope}`);
         } else {
             // Gérer le cas où l'API ne renvoie pas l'horoscope
             await sendMessage(senderId, "Désolé, je n'ai pas pu récupérer l'horoscope pour ce signe aujourd'hui.");
