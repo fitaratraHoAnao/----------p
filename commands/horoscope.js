@@ -7,10 +7,22 @@ module.exports = async (senderId, chosenZodiac) => {
         await sendMessage(senderId, "Je cherche votre horoscope...");
 
         // Obtenir la date actuelle au format YYYY-MM-DD
-        const todayDate = new Date().toISOString().split('T')[0];
+        const todayDate = new Date().toISOString().split('T')[0]; // Format de la date: YYYY-MM-DD
+
+        // Vérification du signe du zodiaque
+        if (!chosenZodiac || !chosenZodiac.sign) {
+            await sendMessage(senderId, "S'il vous plaît, fournissez un signe astrologique valide.");
+            return;
+        }
+
+        // Mettre le signe du zodiaque en minuscule pour correspondre au format attendu par l'API
+        const sign = chosenZodiac.sign.toLowerCase();
 
         // Construire l'URL de l'API avec le signe du zodiaque et la date
-        const apiUrl = `https://ohmanda.com/api/horoscope/${chosenZodiac.sign}?date=${todayDate}`;
+        const apiUrl = `https://ohmanda.com/api/horoscope/${sign}?date=${todayDate}`;
+        console.log('URL utilisée pour l\'API:', apiUrl); // Vérifier l'URL générée
+
+        // Appeler l'API avec axios
         const response = await axios.get(apiUrl);
 
         // Vérifier que la réponse contient bien les données attendues
@@ -21,7 +33,7 @@ module.exports = async (senderId, chosenZodiac) => {
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Envoyer l'horoscope à l'utilisateur
-            await sendMessage(senderId, `Voici votre horoscope pour le signe ${chosenZodiac.sign} :\n\n${horoscope}`);
+            await sendMessage(senderId, `Voici votre horoscope pour le signe ${sign} :\n\n${horoscope}`);
         } else {
             // Gestion de cas où la réponse est mal formée
             await sendMessage(senderId, "Désolé, je n'ai pas pu obtenir votre horoscope.");
@@ -47,3 +59,4 @@ module.exports.info = {
     description: "Obtenez votre horoscope quotidien.",  // Description de la commande
     usage: "Envoyez 'horoscope <signe>' pour obtenir l'horoscope du jour pour un signe du zodiaque."  // Comment utiliser la commande
 };
+        
