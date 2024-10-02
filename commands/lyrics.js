@@ -19,16 +19,25 @@ module.exports = async (senderId, userText) => {
         const apiUrl = `https://lyrist.vercel.app/api/${encodeURIComponent(songName)}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer les paroles de la chanson
+        // Afficher la réponse brute pour déboguer
+        console.log('Réponse de l\'API:', response.data);
+
+        // Vérifier si les données sont présentes dans la réponse
         const lyrics = response.data.lyrics;
         const title = response.data.title;
         const artist = response.data.artist;
         const imageUrl = response.data.image;
 
+        // Si les données ne sont pas trouvées, envoyer un message d'erreur
+        if (!title || !artist || !lyrics) {
+            await sendMessage(senderId, "Désolé, je n'ai pas trouvé les paroles de cette chanson.");
+            return;
+        }
+
         // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Créer le message à envoyer
+        // Créer le message à envoyer avec les paroles
         const message = `**Paroles de "${title}" par ${artist}:**\n\n${lyrics}`;
 
         // Si l'image de l'album existe, l'ajouter à la réponse
