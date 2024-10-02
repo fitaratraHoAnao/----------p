@@ -26,7 +26,14 @@ const handleMessage = async (event, api) => {  // Ajout de `api` pour envoyer de
     const message = event.message;
 
     // Réagir au message avec l'emoji ✅
-    await api.setMessageReaction("✅", event.messageID, true); // Ajoute la réaction automatique au message
+    if (message && event.messageID) {
+        try {
+            // Utilisation de messageID pour identifier le message
+            await api.setMessageReaction("✅", event.messageID);  // Ajoute la réaction "✅" au message
+        } catch (error) {
+            console.error('Erreur lors de l\'ajout de la réaction:', error);
+        }
+    }
 
     // Message d'attente
     const typingMessage = "🇲🇬 *Bruno* rédige sa réponse... un instant, s'il vous plaît 🍟";
