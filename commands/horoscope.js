@@ -3,9 +3,12 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, sign) => {
     try {
+        // Nettoyer l'entrée de l'utilisateur : supprimer les espaces et convertir en minuscules
+        sign = sign.trim().toLowerCase();
+
         // Vérifier si le signe est valide
         const validSigns = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
-        if (!validSigns.includes(sign.toLowerCase())) {
+        if (!validSigns.includes(sign)) {
             await sendMessage(senderId, "Désolé, je ne reconnais pas ce signe. Essayez avec un signe valide (par exemple : aries, taurus, etc.).");
             return;
         }
@@ -21,7 +24,7 @@ module.exports = async (senderId, sign) => {
         await sendMessage(senderId, "Je prépare votre horoscope pour la date du " + formattedDate + "...");
 
         // Construire l'URL de l'API avec le signe et la date du jour
-        const apiUrl = `https://ohmanda.com/api/horoscope/${sign.toLowerCase()}?date=${formattedDate}`;
+        const apiUrl = `https://ohmanda.com/api/horoscope/${sign}?date=${formattedDate}`;
         const response = await axios.get(apiUrl);
 
         // Vérifier que la réponse contient les informations attendues
@@ -33,7 +36,7 @@ module.exports = async (senderId, sign) => {
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Envoyer l'horoscope à l'utilisateur
-            await sendMessage(senderId, horoscope);
+            await sendMessage(senderId, `Voici votre horoscope pour ${sign} :\n${horoscope}`);
         } else {
             // Gérer le cas où l'API ne renvoie pas l'horoscope
             await sendMessage(senderId, "Désolé, je n'ai pas pu récupérer l'horoscope pour ce signe aujourd'hui.");
