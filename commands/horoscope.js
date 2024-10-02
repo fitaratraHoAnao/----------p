@@ -17,6 +17,22 @@ const translateText = async (text) => {
     return response.data.responseData.translatedText;
 };
 
+// Mappage des signes astrologiques en anglais vers le français
+const signTranslations = {
+    aries: 'bélier',
+    taurus: 'taureau',
+    gemini: 'gémeaux',
+    cancer: 'cancer',
+    leo: 'lion',
+    virgo: 'vierge',
+    libra: 'balance',
+    scorpio: 'scorpion',
+    sagittarius: 'sagittaire',
+    capricorn: 'capricorne',
+    aquarius: 'verseau',
+    pisces: 'poissons'
+};
+
 // Fonction principale
 module.exports = async (senderId, sign) => {
     try {
@@ -39,8 +55,11 @@ module.exports = async (senderId, sign) => {
         const day = String(today.getDate()).padStart(2, '0');
         const formattedDate = `${year}-${month}-${day}`;
 
+        // Traduction du signe en français
+        const signInFrench = signTranslations[sign];
+
         // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, `Je prépare votre horoscope pour la date du ${formattedDate} et le signe ${sign}...`);
+        await sendMessage(senderId, `Je prépare votre horoscope pour la date du ${formattedDate} et le signe ${sign} (${signInFrench})...`);
 
         // Appel à l'API Horoscope
         const apiUrl = `https://ohmanda.com/api/horoscope/${sign}?date=${formattedDate}`;
@@ -63,7 +82,7 @@ module.exports = async (senderId, sign) => {
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Envoyer l'horoscope traduit à l'utilisateur
-            await sendMessage(senderId, `Voici votre horoscope pour ${sign.charAt(0).toUpperCase() + sign.slice(1)} en français :\n${translatedHoroscope}`);
+            await sendMessage(senderId, `Voici votre horoscope pour ${sign.charAt(0).toUpperCase() + sign.slice(1)} (${signInFrench}) en français :\n${translatedHoroscope}`);
         } else {
             // Gérer le cas où l'API ne renvoie pas d'horoscope
             await sendMessage(senderId, "Désolé, je n'ai pas pu récupérer l'horoscope pour ce signe aujourd'hui.");
