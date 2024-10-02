@@ -28,7 +28,7 @@ module.exports = async (senderId, sign) => {
 
         // Vérifier si le signe est valide
         if (!validSigns.includes(sign)) {
-            await sendMessage(senderId, "Désolé, je ne reconnais pas ce signe. Essayez avec un signe valide (par exemple : aries, taurus, gemini, etc.).");
+            await sendMessage(senderId, "Désolé, je ne reconnais pas ce signe. Essayez avec un signe valide (par exemple : aries, taurus, gemini, cancer, leo, virgo, libra, scorpio, sagittarius, capricorn, aquarius, pisces).");
             return;
         }
 
