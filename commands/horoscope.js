@@ -1,9 +1,26 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
+// Fonction pour découper une chaîne en segments de 500 caractères
+const splitText = (text, maxLength = 500) => {
+    let result = [];
+    for (let i = 0; i < text.length; i += maxLength) {
+        result.push(text.slice(i, i + maxLength));
+    }
+    return result;
+};
+
+// Fonction pour traduire chaque segment de texte en utilisant l'API MyMemory
+const translateText = async (text) => {
+    const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|fr`;
+    const response = await axios.get(apiUrl);
+    return response.data.responseData.translatedText;
+};
+
+// Fonction principale
 module.exports = async (senderId, sign) => {
     try {
-        // Nettoyer l'entrée de l'utilisateur : supprimer les espaces et convertir en minuscules
+        // Nettoyer l'entrée de l'utilisateur
         sign = sign.trim().toLowerCase();
 
         // Liste des signes astrologiques valides
@@ -18,29 +35,37 @@ module.exports = async (senderId, sign) => {
         // Obtenir la date du jour au format AAAA-MM-JJ
         const today = new Date();
         const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0'); // Mois commence à 0, donc on ajoute 1
+        const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         const formattedDate = `${year}-${month}-${day}`;
 
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, `Je prépare votre horoscope pour la date du ${formattedDate} et le signe ${sign}...`);
 
-        // Construire l'URL de l'API avec le signe et la date du jour
+        // Appel à l'API Horoscope
         const apiUrl = `https://ohmanda.com/api/horoscope/${sign}?date=${formattedDate}`;
         const response = await axios.get(apiUrl);
 
-        // Vérifier que la réponse contient les informations attendues
         if (response.data && response.data.horoscope) {
-            // Extraire l'horoscope du corps de la réponse
             const horoscope = response.data.horoscope;
+
+            // Découper le texte en segments de 500 caractères
+            const segments = splitText(horoscope);
+
+            // Traduire chaque segment
+            let translatedHoroscope = '';
+            for (const segment of segments) {
+                const translatedSegment = await translateText(segment);
+                translatedHoroscope += translatedSegment; // Combiner les traductions
+            }
 
             // Attendre 2 secondes avant d'envoyer la réponse
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Envoyer l'horoscope à l'utilisateur
-            await sendMessage(senderId, `Voici votre horoscope pour ${sign.charAt(0).toUpperCase() + sign.slice(1)} :\n${horoscope}`);
+            // Envoyer l'horoscope traduit à l'utilisateur
+            await sendMessage(senderId, `Voici votre horoscope pour ${sign.charAt(0).toUpperCase() + sign.slice(1)} en français :\n${translatedHoroscope}`);
         } else {
-            // Gérer le cas où l'API ne renvoie pas l'horoscope
+            // Gérer le cas où l'API ne renvoie pas d'horoscope
             await sendMessage(senderId, "Désolé, je n'ai pas pu récupérer l'horoscope pour ce signe aujourd'hui.");
         }
 
