@@ -1,12 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const path = require('path');
 const handleMessage = require('./handles/handleMessage');
 const handlePostback = require('./handles/handlePostback');
 require('dotenv').config();
-
-// Ici nous avons besoin d'utiliser l'API pour réagir aux messages
-// Vous pouvez utiliser le SDK Facebook Messenger ou une API personnalisée pour gérer les réponses
-const axios = require('axios'); // Ou toute autre bibliothèque pour l'API
+const axios = require('axios'); // Bibliothèque pour l'API
 
 const app = express();
 
@@ -18,7 +16,6 @@ const api = {
     // Exemple d'API Graph Facebook pour envoyer une réaction
     setMessageReaction: async (reaction, messageID) => {
         try {
-            // Supposons que vous ayez un token d'accès et une URL de base pour l'API Graph
             const accessToken = process.env.FB_ACCESS_TOKEN;
             const url = `https://graph.facebook.com/v11.0/${messageID}/reactions`;
 
@@ -36,11 +33,11 @@ const api = {
 // Route pour le webhook de Facebook
 app.get('/webhook', (req, res) => {
     const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
-    
+
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
-    
+
     if (mode && token) {
         if (mode === 'subscribe' && token === VERIFY_TOKEN) {
             console.log('WEBHOOK_VERIFIED');
@@ -54,7 +51,7 @@ app.get('/webhook', (req, res) => {
 // Route pour recevoir les messages entrants
 app.post('/webhook', (req, res) => {
     const body = req.body;
-    
+
     if (body.object === 'page') {
         body.entry.forEach(entry => {
             const event = entry.messaging[0];
@@ -68,6 +65,14 @@ app.post('/webhook', (req, res) => {
     } else {
         res.sendStatus(404);
     }
+});
+
+// Servir le répertoire public
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Route pour la page d'accueil
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Démarrer le serveur
