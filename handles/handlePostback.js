@@ -8,7 +8,7 @@ const handlePostback = (event) => {
     if (payload === 'GET_STARTED') {
         sendMessage(senderId, "Welcome! Please send me an image to start.");
     } else {
-        sendMessage(senderId, "I didn't understand that action.");
+        sendMessage(senderId, "🇲🇬 Salut, je m'appelle Bruno ! Je suis là pour répondre à toutes vos questions. Comment puis-je vous aider aujourd'hui ? ✅");
     }
 };
 
