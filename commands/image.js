@@ -11,10 +11,16 @@ const sendImageFromPrompt = async (senderId, prompt) => {
         
         // Appeler l'API pour générer l'image
         const response = await axios.get(apiUrl);
-        const imageUrl = response.data; // Supposons que l'URL de l'image est renvoyée directement
 
-        // Envoyer l'image à l'utilisateur
-        await sendMessage(senderId, { files: [imageUrl] }); // Envoi de l'image en tant que fichier
+        // Vérifier si la réponse contient une URL d'image
+        if (response.data && response.data.image_url) { // Assurez-vous d'adapter cette ligne à la structure de votre réponse
+            const imageUrl = response.data.image_url;
+
+            // Envoyer l'image à l'utilisateur
+            await sendMessage(senderId, { files: [imageUrl] }); // Envoi de l'image en tant que fichier
+        } else {
+            await sendMessage(senderId, 'Désolé, je n\'ai pas pu trouver l\'image.'); // Réponse en cas d'absence d'image
+        }
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API de génération d\'images:', error);
         await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors de la génération de l\'image.');
