@@ -1,6 +1,9 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
+// Déclaration de l'URL de base de votre API
+const BASE_API_URL = 'https://cohere-nouveau.onrender.com/chat';
+
 module.exports = async (senderId, userText) => {
     // Extraire le prompt en retirant le préfixe 'ai' et en supprimant les espaces superflus
     const prompt = userText.slice(3).trim();
@@ -15,11 +18,11 @@ module.exports = async (senderId, userText) => {
         // Envoyer un message de confirmation que la requête est en cours de traitement
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Appeler l'API Nashbot avec le prompt fourni
-        const apiUrl = `https://nash-rest-api-production.up.railway.app/nashbot?prompt=${encodeURIComponent(prompt)}`;
+        // Appeler l'API avec le prompt fourni et l'ID utilisateur
+        const apiUrl = `${BASE_API_URL}?message=${encodeURIComponent(prompt)}&userId=${senderId}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer la réponse de l'API Nashbot
+        // Récupérer la réponse de l'API
         const reply = response.data.response;
 
         // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
@@ -28,7 +31,7 @@ module.exports = async (senderId, userText) => {
         // Envoyer la réponse de l'API à l'utilisateur
         await sendMessage(senderId, reply);
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API Nashbot:', error);
+        console.error('Erreur lors de l\'appel à l\'API Cohere:', error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question.');
