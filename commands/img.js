@@ -45,3 +45,9 @@ module.exports = async (senderId, message) => {
         await sendMessage(senderId, "Veuillez envoyer une image pour que je puisse extraire le texte.");
     }
 };
+// Ajouter les informations de la commande
+module.exports.info = {
+    name: "img",  // Le nom de la commande
+    description: "Envoyer une image pour obtenir le texte extrait.",  // Description de la commande
+    usage: "Envoyez une image pour obtenir le texte extrait."  // Comment utiliser la commande
+};
