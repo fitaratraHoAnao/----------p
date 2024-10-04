@@ -21,6 +21,9 @@ const activeCommands = {};
 // Stocker l'historique de l'image pour chaque utilisateur
 const imageHistory = {};
 
+// Stocker l'état de la désactivation de Gemini pour les images
+const geminiImageDisabled = {};  // Nouvelle variable
+
 const handleMessage = async (event, api) => {
     const senderId = event.sender.id;
     const message = event.message;
@@ -37,10 +40,11 @@ const handleMessage = async (event, api) => {
     // Ajouter un délai de 2 secondes
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Si l'utilisateur envoie "stop", désactiver la commande active
+    // Si l'utilisateur envoie "stop", désactiver la commande active et réactiver Gemini pour les images
     if (message.text && message.text.toLowerCase() === 'stop') {
         activeCommands[senderId] = null;
-        await sendMessage(senderId, "Toutes les commandes sont désactivées. Vous pouvez maintenant envoyer d'autres messages.");
+        geminiImageDisabled[senderId] = false;  // Réactiver les réponses image Gemini
+        await sendMessage(senderId, "Toutes les commandes sont désactivées. Gemini réactivera maintenant les réponses aux images.");
         return;
     }
 
@@ -49,26 +53,34 @@ const handleMessage = async (event, api) => {
         const imageUrl = message.attachments[0].payload.url; // URL de l'image envoyée
         await sendMessage(senderId, "✨ Merci pour l'image ! Posez des questions si vous le souhaitez ! 🌇");
 
-        try {
-            // Sauvegarder l'image dans l'historique pour cet utilisateur
-            imageHistory[senderId] = imageUrl;
+        // Vérifier si la commande 'img.js' est active
+        if (activeCommands[senderId] === 'img') {
+            // La commande img est active, ne pas utiliser l'API Gemini pour cette image
+            await sendMessage(senderId, "🛠️ Analyse de l'image en cours via la commande 'img'...");
+            await commands['img'](senderId, imageUrl);  // Appeler la commande img avec l'image
+            geminiImageDisabled[senderId] = true;  // Désactiver Gemini pour les images
+        } else if (!geminiImageDisabled[senderId]) {
+            try {
+                // Sauvegarder l'image dans l'historique pour cet utilisateur
+                imageHistory[senderId] = imageUrl;
 
-            // Appeler l'API pour traiter l'image
-            const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
-                link: imageUrl,
-                customId: senderId
-            });
-            const reply = response.data.message; // Réponse de l'API
-            
-            // Vérifier si la réponse de l'API est valide
-            if (reply) {
-                await sendMessage(senderId, `Résultat de l'image : ${reply}`);
-            } else {
-                await sendMessage(senderId, 'Je n\'ai pas reçu de réponse valide pour l\'image.');
+                // Appeler l'API Gemini pour traiter l'image
+                const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
+                    link: imageUrl,
+                    customId: senderId
+                });
+                const reply = response.data.message; // Réponse de l'API
+                
+                // Vérifier si la réponse de l'API est valide
+                if (reply) {
+                    await sendMessage(senderId, `Résultat de l'image : ${reply}`);
+                } else {
+                    await sendMessage(senderId, 'Je n\'ai pas reçu de réponse valide pour l\'image.');
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'analyse de l\'image :', error);
+                // Ne rien faire ici pour éviter d'envoyer un message d'erreur après le message de remerciement
             }
-        } catch (error) {
-            console.error('Erreur lors de l\'analyse de l\'image :', error);
-            // Ne rien faire ici pour éviter d'envoyer un message d'erreur après le message de remerciement
         }
         return; // Sortir après avoir géré l'image
     }
@@ -93,6 +105,11 @@ const handleMessage = async (event, api) => {
                 // Activer les autres commandes
                 activeCommands[senderId] = commandName; // Activer cette commande pour les futurs messages
                 await commands[commandName](senderId, commandPrompt); // Appeler la commande
+
+                // Désactiver les réponses de Gemini pour les images si img.js est activée
+                if (commandName === 'img') {
+                    geminiImageDisabled[senderId] = true;  // Désactiver Gemini pour les images
+                }
             }
 
             return; // Sortir après l'exécution de la commande
