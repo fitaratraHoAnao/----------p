@@ -120,10 +120,15 @@
       messageInput.value = '';
 
       try {
-          const userId = 'someUserId'; // Remplacez ceci par l'ID utilisateur réel
+          // Encodez le message pour l'URL
+          const encodedMessage = encodeURIComponent(message);
+          
+          // Mettre à jour l'URL de l'API
+          const apiUrl = `https://discussion-continue-gem29.vercel.app/api?ask=${encodedMessage}`;
+          
           console.log('Message envoyé:', message);
           
-          const response = await fetch(`https://cohere-nouveau.onrender.com/chat?message=${encodeURIComponent(message)}&userId=${userId}`);
+          const response = await fetch(apiUrl);
           const data = await response.json();
           console.log('Données de l\'API:', data); // Log de la réponse
 
