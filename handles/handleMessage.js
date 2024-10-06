@@ -54,7 +54,7 @@ const handleMessage = async (event, api) => {
             imageHistory[senderId] = imageUrl;
 
             // Appeler l'API pour traiter l'image
-            const response = await axios.post('https://gemini-ap-espa-bruno-64mf.onrender.com/api/gemini', {
+            const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
                 link: imageUrl,
                 customId: senderId
             });
