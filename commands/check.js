@@ -23,11 +23,19 @@ module.exports = async (senderId, prompt) => {
         let reply = '';
         if (corrections.length > 0) {
             reply = 'Voici les suggestions de correction :\n';
+            
             corrections.forEach((correction, index) => {
                 reply += `${index + 1}. ${correction.message}\nSuggestions : ${correction.suggestions.join(', ')}\n\n`;
 
-                // Remplacer les mots incorrects par les premières suggestions dans le texte corrigé
-                correctedText = correctedText.replace(correction.word, correction.suggestions[0] || correction.word);
+                // Remplacer le mot ou la phrase incorrect(e) par la première suggestion dans le texte corrigé
+                const wordToReplace = correction.word;  // Le mot ou l'expression à remplacer
+                const suggestion = correction.suggestions[0];  // Prendre la première suggestion
+                
+                if (suggestion) {
+                    // Utilisation d'une expression régulière pour s'assurer que seules les occurrences exactes du mot sont remplacées
+                    const regex = new RegExp(`\\b${wordToReplace}\\b`, 'g');
+                    correctedText = correctedText.replace(regex, suggestion);
+                }
             });
 
             // Ajouter la version corrigée du texte à la fin
@@ -55,3 +63,4 @@ module.exports.info = {
     description: "Permet de corriger les fautes d'orthographe dans un message et d'afficher le texte corrigé.",  // Description de la commande
     usage: "Envoyez 'check <message>' pour vérifier et corriger les fautes d'orthographe."  // Comment utiliser la commande
 };
+        
