@@ -3,59 +3,73 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, title) => {
     try {
-        // Envoyer un message de confirmation que la recherche est en cours
-        await sendMessage(senderId, "Recherche du poème...");
+        // Envoyer un message de confirmation que le message a été reçu
+        await sendMessage(senderId, "Recherche du poème en cours...");
 
-        // Appeler l'API PoetryDB pour obtenir le poème
-        const poetryUrl = `https://poetrydb.org/title/${encodeURIComponent(title)}`;
-        const response = await axios.get(poetryUrl);
+        // Appeler l'API de PoetryDB pour récupérer le poème
+        const apiUrl = `https://poetrydb.org/title/${title}`;
+        const response = await axios.get(apiUrl);
+        
+        // Vérifier si le poème a été trouvé
+        if (response.data.length === 0) {
+            await sendMessage(senderId, "Désolé, je n'ai pas trouvé de poème avec ce titre.");
+            return;
+        }
 
         const poem = response.data[0];
-        if (!poem) {
-            return await sendMessage(senderId, "Poème non trouvé.");
-        }
+        const lines = poem.lines; // Récupérer les lignes du poème
+        const translatedPoem = [];
 
-        // Combiner les lignes du poème
-        const poemText = poem.lines.join(' ');
-
-        // Fonction pour découper en morceaux de 450 caractères
-        const splitText = (text, size) => {
-            const regex = new RegExp(`.{1,${size}}`, 'g');
-            return text.match(regex);
-        };
-
-        // Découper le texte en morceaux de 450 caractères
-        const textChunks = splitText(poemText, 450);
-        let translatedChunks = [];
-
-        // Traduire chaque morceau via l'API MyMemory
-        for (const chunk of textChunks) {
-            const translationUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=en|fr`;
-            const { data } = await axios.get(translationUrl);
-
-            // Vérifier si la traduction est réussie
-            if (data.responseData && data.responseData.translatedText) {
-                translatedChunks.push(data.responseData.translatedText);
+        // Découper le texte en morceaux de maximum 450 caractères
+        const chunks = [];
+        let currentChunk = '';
+        for (const line of lines) {
+            if ((currentChunk + line).length <= 450) {
+                currentChunk += line + '\n';
             } else {
-                await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la traduction.");
-                return;
+                chunks.push(currentChunk.trim());
+                currentChunk = line + '\n';
             }
         }
+        if (currentChunk) {
+            chunks.push(currentChunk.trim());
+        }
 
-        // Combiner les morceaux traduits
-        const translatedPoem = translatedChunks.join(' ');
+        // Traduire chaque morceau avec l'API MyMemory
+        for (const chunk of chunks) {
+            const translationResponse = await axios.post('https://api.mymemory.translated.net/get', null, {
+                params: {
+                    q: chunk,
+                    langpair: 'en|fr'
+                }
+            });
 
-        // Envoyer la traduction du poème à l'utilisateur
-        await sendMessage(senderId, `Voici le poème traduit :\n\n${translatedPoem}`);
+            const translatedText = translationResponse.data.responseData.translatedText;
+            translatedPoem.push(translatedText);
+        }
+
+        // Combiner les morceaux traduits en respectant les sauts de ligne
+        const finalTranslatedPoem = translatedPoem.join('\n\n'); // Ajoute une ligne vide entre les strophes
+
+        // Formater la réponse
+        let formattedResponse = `Voici le poème "${poem.title}" de ${poem.author} traduit :\n\n${finalTranslatedPoem}`;
+
+        // Attendre 2 secondes avant d'envoyer la réponse
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Envoyer la réponse de traduction à l'utilisateur
+        await sendMessage(senderId, formattedResponse);
     } catch (error) {
-        console.error('Erreur lors de la recherche du poème ou de la traduction:', error);
-        await sendMessage(senderId, "Désolé, une erreur s'est produite.");
+        console.error('Erreur lors de l\'appel aux API :', error);
+
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre demande.");
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "poeme",
-    description: "Recherche et traduit un poème.",
-    usage: "Envoyez 'poeme <titre>' pour obtenir et traduire un poème."
+    name: "poeme",  // Le nom de la commande pour récupérer un poème
+    description: "Permet de récupérer un poème par son titre et de le traduire en français.",  // Description de la commande
+    usage: "Envoyez 'poeme <titre>' pour récupérer et traduire le poème."  // Comment utiliser la commande
 };
