@@ -7,7 +7,7 @@ module.exports = async (senderId, prompt) => {
         await sendMessage(senderId, "Message reçu, je prépare une correction...");
 
         // Appeler l'API de correction orthographique avec le message de l'utilisateur
-        const apiUrl = `https://check-orthographe-francais.onrender.com/check`;
+        const apiUrl = `https://check-ortho-francais.vercel.app/check`;
         const response = await axios.post(apiUrl, {
             text: prompt,      // Texte à corriger
             language: 'fr'     // Langue pour la correction (ici français)
