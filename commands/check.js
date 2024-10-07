@@ -16,13 +16,22 @@ module.exports = async (senderId, prompt) => {
         // Récupérer les corrections dans la réponse de l'API
         const corrections = response.data.corrections;
 
-        // Construire la réponse avec les messages et suggestions
+        // Initialiser le texte corrigé en utilisant le message original
+        let correctedText = prompt;
+
+        // Construire la réponse avec les corrections et suggestions
         let reply = '';
         if (corrections.length > 0) {
             reply = 'Voici les suggestions de correction :\n';
             corrections.forEach((correction, index) => {
                 reply += `${index + 1}. ${correction.message}\nSuggestions : ${correction.suggestions.join(', ')}\n\n`;
+
+                // Remplacer les mots incorrects par les premières suggestions dans le texte corrigé
+                correctedText = correctedText.replace(correction.word, correction.suggestions[0] || correction.word);
             });
+
+            // Ajouter la version corrigée du texte à la fin
+            reply += `\nTexte corrigé :\n${correctedText}`;
         } else {
             reply = 'Aucune faute trouvée dans votre message.';
         }
@@ -43,6 +52,6 @@ module.exports = async (senderId, prompt) => {
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "check",  // Le nom de la commande pour la correction orthographique
-    description: "Permet de corriger les fautes d'orthographe dans un message.",  // Description de la commande
+    description: "Permet de corriger les fautes d'orthographe dans un message et d'afficher le texte corrigé.",  // Description de la commande
     usage: "Envoyez 'check <message>' pour vérifier et corriger les fautes d'orthographe."  // Comment utiliser la commande
 };
