@@ -62,7 +62,7 @@ const handleMessage = async (event, api) => {
             
             // Vérifier si la réponse de l'API est valide
             if (reply) {
-                await sendMessage(senderId, `Résultat de l'image : ${reply}`);
+                await sendMessage(senderId, `Bot: voilà ma suggestion de réponse sur cette image:\n${reply}`);
             } else {
                 await sendMessage(senderId, 'Je n\'ai pas reçu de réponse valide pour l\'image.');
             }
