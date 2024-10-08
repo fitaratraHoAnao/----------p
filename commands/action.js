@@ -6,17 +6,28 @@ module.exports = async (senderId, prompt) => {
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Appeler l'API Wikidata pour obtenir des informations sur "chat"
+        // Appeler l'API Wikidata pour obtenir des informations sur le terme recherché
         const apiUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(prompt)}&language=fr&format=json`;
         const response = await axios.get(apiUrl);
 
         // Vérifier si des résultats ont été trouvés
         if (response.data.search.length > 0) {
-            // Récupérer la première réponse pertinente
-            const result = response.data.search[0];
-            const reply = `Voici ce que j'ai trouvé pour "${result.label}": ${result.description}. Vous pouvez en savoir plus ici: ${result.url}`;
+            // Récupérer les résultats pertinents
+            const results = response.data.search.map(result => {
+                return {
+                    label: result.label,
+                    description: result.description,
+                    url: `https://www.wikidata.org/wiki/${result.id}`
+                };
+            });
+
+            // Créer une réponse formatée
+            let reply = `Voici ce que j'ai trouvé pour "${prompt}":\n\n`;
+            results.forEach(result => {
+                reply += `- **${result.label}**: ${result.description}\n  [Voir plus](${result.url})\n`;
+            });
         } else {
-            const reply = `Désolé, je n'ai trouvé aucune information pour "${prompt}".`;
+            reply = `Désolé, je n'ai trouvé aucune information pour "${prompt}".`;
         }
 
         // Attendre 2 secondes avant d'envoyer la réponse
