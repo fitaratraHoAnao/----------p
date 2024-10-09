@@ -59,12 +59,12 @@ const handleMessage = async (event, api) => {
                 customId: senderId
             });
             let reply = response.data.message; // Réponse de l'API
-            
+
             // Vérifier si la réponse de l'API est valide
             if (reply) {
                 // Limite de caractères par message (par exemple 2000 caractères)
                 const charLimit = 2000;
-                
+
                 // Si la réponse est trop longue, la diviser en plusieurs parties
                 for (let i = 0; i < reply.length; i += charLimit) {
                     const part = reply.slice(i, i + charLimit);
@@ -73,11 +73,30 @@ const handleMessage = async (event, api) => {
             } else {
                 await sendMessage(senderId, 'Je n\'ai pas reçu de réponse valide pour l\'image.');
             }
+
+            // Envoyer la question prédéfinie "Que représente cette image ?" à l'API Gemini
+            const questionPrompt = "Que représente cette image ?";
+            const questionResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
+                link: imageUrl, // Réutilisation du même lien de l'image
+                prompt: questionPrompt, // Envoi de la question comme prompt
+                customId: senderId
+            });
+
+            let questionReply = questionResponse.data.message;
+
+            // Limite de caractères par message
+            const charLimit = 2000;
+
+            // Diviser la réponse de la question si elle dépasse la limite en plusieurs parties
+            for (let i = 0; i < questionReply.length; i += charLimit) {
+                const part = questionReply.slice(i, i + charLimit);
+                await sendMessage(senderId, `Bot: réponse à la question (partie ${Math.floor(i / charLimit) + 1}):\n${part}`);
+            }
         } catch (error) {
-            console.error('Erreur lors de l\'analyse de l\'image :', error);
-            // Ne rien faire ici pour éviter d'envoyer un message d'erreur après le message de remerciement
+            console.error('Erreur lors de l\'analyse de l\'image ou de la question :', error);
+            await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre image ou de la question.');
         }
-        return; // Sortir après avoir géré l'image
+        return; // Sortir après avoir géré l'image et la question
     }
 
     // Vérifier s'il existe une commande active pour cet utilisateur (sauf pour la commande "menu")
