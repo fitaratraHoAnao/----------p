@@ -53,18 +53,31 @@ const handleMessage = async (event, api) => {
             // Sauvegarder l'image dans l'historique pour cet utilisateur
             imageHistory[senderId] = imageUrl;
 
-            // Appeler l'API Gemini pour traiter l'image
-            const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
+            // Appeler la première méthode de l'API Gemini
+            const responseMethod1 = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
                 link: imageUrl,
                 customId: senderId
             });
-            const reply = response.data.message; // Réponse de l'API
-            
-            // Vérifier si la réponse de l'API est valide
-            if (reply) {
-                await sendMessage(senderId, `Bot: voilà ma suggestion de réponse sur cette image:\n${reply}`);
+            const replyMethod1 = responseMethod1.data.message; // Réponse de la première méthode
+
+            // Appeler la deuxième méthode de l'API (même API ou une API différente mais pour obtenir un résultat similaire)
+            const responseMethod2 = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini_v2', {
+                link: imageUrl,
+                customId: senderId
+            });
+            const replyMethod2 = responseMethod2.data.message; // Réponse de la deuxième méthode
+
+            // Vérifier si les deux réponses sont valides et les envoyer séparément à l'utilisateur
+            if (replyMethod1) {
+                await sendMessage(senderId, `Bot (Méthode 1): Voici la réponse avec la première méthode:\n${replyMethod1}`);
             } else {
-                await sendMessage(senderId, 'Je n\'ai pas reçu de réponse valide pour l\'image.');
+                await sendMessage(senderId, 'Je n\'ai pas reçu de réponse valide pour l\'image avec la première méthode.');
+            }
+
+            if (replyMethod2) {
+                await sendMessage(senderId, `Bot (Méthode 2): Voici la réponse avec la deuxième méthode:\n${replyMethod2}`);
+            } else {
+                await sendMessage(senderId, 'Je n\'ai pas reçu de réponse valide pour l\'image avec la deuxième méthode.');
             }
         } catch (error) {
             console.error('Erreur lors de l\'analyse de l\'image :', error);
@@ -104,12 +117,28 @@ const handleMessage = async (event, api) => {
     const customId = senderId;
 
     try {
-        const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
+        // Appel de la première méthode de l'API pour le prompt
+        const responseMethod1 = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
             prompt,
             customId
         });
-        const reply = response.data.message;
-        await sendMessage(senderId, reply);
+        const replyMethod1 = responseMethod1.data.message;
+
+        // Appel de la deuxième méthode (par exemple, une version différente de l'API)
+        const responseMethod2 = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini_v2', {
+            prompt,
+            customId
+        });
+        const replyMethod2 = responseMethod2.data.message;
+
+        // Envoi des réponses de chaque méthode
+        if (replyMethod1) {
+            await sendMessage(senderId, `Bot (Méthode 1): Voici la réponse avec la première méthode:\n${replyMethod1}`);
+        }
+
+        if (replyMethod2) {
+            await sendMessage(senderId, `Bot (Méthode 2): Voici la réponse avec la deuxième méthode:\n${replyMethod2}`);
+        }
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API :', error);
         await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre message.');
