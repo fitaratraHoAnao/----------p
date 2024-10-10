@@ -14,7 +14,6 @@ module.exports = async (senderId, messageText) => {
             
             // Vérifier si le choix est valide
             if (choice >= 1 && choice <= searchResults.length) {
-                // Récupérer la vidéo sélectionnée
                 const selectedVideo = searchResults[choice - 1];
 
                 // Envoyer un message de confirmation que le téléchargement est en cours
@@ -22,13 +21,16 @@ module.exports = async (senderId, messageText) => {
 
                 // Appeler l'API Flask pour télécharger la vidéo choisie
                 const apiUrl = `https://recherche-youtube.onrender.com/regarde`;
-                const response = await axios.post(apiUrl, { choice });
-
-                // Récupérer la réponse formatée
-                const message = response.data.error ? response.data.error : "La vidéo a été téléchargée avec succès.";
-
-                // Envoyer la réponse de l'API à l'utilisateur
-                await sendMessage(senderId, message);
+                try {
+                    const response = await axios.post(apiUrl, { choice });
+                    
+                    // Récupérer la réponse formatée
+                    const message = response.data.error ? response.data.error : "La vidéo a été téléchargée avec succès.";
+                    await sendMessage(senderId, message);
+                } catch (error) {
+                    console.error('Erreur lors de l\'appel à l\'API:', error.message);
+                    await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre commande. Détails : " + error.message);
+                }
 
                 // Effacer les résultats de recherche après le téléchargement
                 delete searchResultsMap[senderId];
@@ -66,8 +68,7 @@ module.exports = async (senderId, messageText) => {
             }
         }
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API Flask:', error);
-
+        console.error('Erreur lors du traitement du message:', error);
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre commande.");
     }
