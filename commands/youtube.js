@@ -62,6 +62,7 @@ module.exports = async (senderId, messageText) => {
                     // Envoyer la liste des vidéos à l'utilisateur
                     await sendMessage(senderId, `Voici la liste des vidéos disponibles:\n${searchResults.join('\n')}`);
                     await sendMessage(senderId, "Veuillez entrer un numéro pour télécharger la vidéo correspondante.");
+                    return; // Assurez-vous de sortir de la fonction ici pour attendre la réponse
                 }
             } else {
                 await sendMessage(senderId, "Commande inconnue. Veuillez commencer votre message par 'youtube' suivi de la recherche.");
