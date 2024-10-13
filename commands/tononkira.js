@@ -26,15 +26,20 @@ module.exports = async (senderId, prompt) => {
                 reply += `    Artiste ❤️: ${song.artist}\n\n`;
             });
         } else {
-            // Si l'utilisateur a entré un titre et un artiste, extraire les informations
-            const [title, artist] = prompt.split(' ').slice(-2); // On prend les deux derniers mots comme titre et artiste
-
+            // Si l'utilisateur a entré un titre et un artiste
+            const parts = prompt.split(' ');
+            const title = parts.slice(0, parts.length - 1).join(' '); // Tous sauf le dernier mot comme titre
+            const artist = parts[parts.length - 1]; // Le dernier mot comme artiste
+            
+            // Créer l'URL pour les paroles
             const lyricsApiUrl = `https://tononkira.onrender.com/parole?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`;
+            console.log(`Appel à l'API pour les paroles : ${lyricsApiUrl}`); // Afficher l'URL pour déboguer
+            
             const lyricsResponse = await axios.get(lyricsApiUrl);
             reply = lyricsResponse.data; // Obtenir les données JSON des paroles
 
             // Formater la réponse pour l'utilisateur
-            reply = `Paroles de "${title}" par "${artist}" :\n${reply.lyrics}`;
+            reply = `Paroles de "${title}" par "${artist}" :\n${reply.lyrics.replace(/\\n/g, '\n')}`; // Remplacer les \n par de véritables sauts de ligne
         }
 
         // Attendre 2 secondes avant d'envoyer la réponse
