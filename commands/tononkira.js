@@ -17,11 +17,14 @@ module.exports = async (senderId, prompt) => {
             const songsApiUrl = `https://tononkira.onrender.com/hira/rehetra?page=${page}`;
 
             const songsResponse = await axios.get(songsApiUrl);
-            reply = songsResponse.data; // Obtenir les données JSON des chansons
-
-            // Formater la réponse pour l'utilisateur
-            reply = `Voici les chansons de la page ${page} :\n` + 
-                    songsResponse.data.songs.map(song => `- ${song.title} par ${song.artist}`).join('\n');
+            
+            // Construire une réponse formatée pour les chansons
+            reply = `Voici les chansons de la page ${page} :\n`;
+            
+            songsResponse.data.songs.forEach((song, index) => {
+                reply += `${index + 1}) Titre : ${song.title}\n`;
+                reply += `    Artiste ❤️: ${song.artist}\n\n`;
+            });
         } else {
             // Si l'utilisateur a entré un titre et un artiste, extraire les informations
             const [title, artist] = prompt.split(' ').slice(-2); // On prend les deux derniers mots comme titre et artiste
