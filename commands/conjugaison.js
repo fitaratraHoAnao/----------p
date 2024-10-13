@@ -4,7 +4,7 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 module.exports = async (senderId, prompt) => {
     try {
         // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
+        await sendMessage(senderId, `Attendez, je conjugue le verbe "${prompt}"...`);
 
         // Utiliser le prompt comme verbe pour l'API de conjugaison
         const apiUrl = `https://conjugaison-livid.vercel.app/conjugaison?verbe=${encodeURIComponent(prompt)}`;
@@ -39,4 +39,3 @@ module.exports.info = {
     description: "Permet de conjuguer des verbes.",  // Description de la commande modifiée
     usage: "Envoyez 'conjugaison <verbe>' pour obtenir la conjugaison du verbe."  // Comment utiliser la commande modifiée
 };
-            
