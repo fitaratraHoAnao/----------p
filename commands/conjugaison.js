@@ -10,14 +10,21 @@ module.exports = async (senderId, prompt) => {
         const apiUrl = `https://conjugaison-livid.vercel.app/conjugaison?verbe=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer la réponse de l'API de conjugaison
-        const reply = JSON.stringify(response.data, null, 2); // Format JSON pour une réponse lisible
+        // Formatage de la réponse
+        const conjugaison = response.data; // Récupérer la réponse JSON
+        let formattedReply = '';
+
+        // Créer un format lisible à partir de la réponse
+        for (const [tense, forms] of Object.entries(conjugaison)) {
+            formattedReply += `👉${tense.charAt(0).toUpperCase() + tense.slice(1)} :\n`;
+            formattedReply += forms.map(form => `    ${form}`).join('\n') + '\n\n'; // Ajouter les formes avec indentation
+        }
 
         // Attendre 2 secondes avant d'envoyer la réponse
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Envoyer la réponse de l'API à l'utilisateur
-        await sendMessage(senderId, reply);
+        // Envoyer la réponse formatée à l'utilisateur
+        await sendMessage(senderId, formattedReply.trim());
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API de conjugaison:', error);
 
@@ -32,3 +39,4 @@ module.exports.info = {
     description: "Permet de conjuguer des verbes.",  // Description de la commande modifiée
     usage: "Envoyez 'conjugaison <verbe>' pour obtenir la conjugaison du verbe."  // Comment utiliser la commande modifiée
 };
+            
