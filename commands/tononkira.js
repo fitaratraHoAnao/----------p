@@ -14,7 +14,7 @@ module.exports = async (senderId, prompt) => {
         if (isPageRequest) {
             // Si l'utilisateur demande une page, récupérer les chansons de cette page
             const page = parseInt(prompt.trim(), 10);
-            const songsApiUrl = `https://tononkira.onrender.com/hira/rehetra?page=${page}`;
+            const songsApiUrl = `https://parol.vercel.app/hira/rehetra?page=${page}`;
 
             const songsResponse = await axios.get(songsApiUrl);
             
@@ -22,7 +22,7 @@ module.exports = async (senderId, prompt) => {
             reply = `Voici les chansons de la page ${page} :\n`;
             
             songsResponse.data.songs.forEach((song, index) => {
-                reply += `${index + 1}) Titre : ${song.title}\n`;
+                reply += `${index + 1} - Titre : ${song.title}\n`;
                 reply += `    Artiste ❤️: ${song.artist}\n\n`;
             });
         } else {
@@ -32,7 +32,7 @@ module.exports = async (senderId, prompt) => {
             const artist = parts[parts.length - 1]; // Le dernier mot comme artiste
             
             // Créer l'URL pour les paroles
-            const lyricsApiUrl = `https://tononkira.onrender.com/parole?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`;
+            const lyricsApiUrl = `https://parol.vercel.app/parole?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`;
             console.log(`Appel à l'API pour les paroles : ${lyricsApiUrl}`); // Afficher l'URL pour déboguer
             
             const lyricsResponse = await axios.get(lyricsApiUrl);
