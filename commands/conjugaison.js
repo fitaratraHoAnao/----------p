@@ -1,6 +1,19 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
+// Fonction pour découper un message en plusieurs morceaux
+function splitMessageIntoChunks(message, maxLength = 2000) {
+    const chunks = [];
+    let start = 0;
+
+    while (start < message.length) {
+        chunks.push(message.slice(start, start + maxLength));
+        start += maxLength;
+    }
+
+    return chunks;
+}
+
 module.exports = async (senderId, verbe) => {
     try {
         // Envoyer un message de confirmation que le message a été reçu
@@ -16,11 +29,14 @@ module.exports = async (senderId, verbe) => {
         // Reformater la réponse de l'API pour correspondre à la structure souhaitée
         const formattedResponse = `✅${verbe.charAt(0).toUpperCase() + verbe.slice(1)}\n${conjugaison.replace(/\n+/g, '\n')}`;
 
-        // Attendre 2 secondes avant d'envoyer la réponse
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Découper la réponse en morceaux de taille appropriée (par exemple 2000 caractères max)
+        const messageChunks = splitMessageIntoChunks(formattedResponse);
 
-        // Envoyer la conjugaison du verbe à l'utilisateur
-        await sendMessage(senderId, formattedResponse);
+        // Envoyer les morceaux successivement avec un délai
+        for (const chunk of messageChunks) {
+            await sendMessage(senderId, chunk);
+            await new Promise(resolve => setTimeout(resolve, 1500));  // Délai de 1.5 seconde entre chaque envoi
+        }
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API de conjugaison:', error);
 
