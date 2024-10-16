@@ -36,15 +36,12 @@ module.exports = async (senderId, prompt) => {
         const searchQuery = encodeURIComponent(userSearchState[senderId].query);
         const page = userSearchState[senderId].page;
 
-        // **Déclaration des deux URL**
-        const apiUrl1 = `https://citation-mu.vercel.app/search?query=${searchQuery}&page=${page}`;
-        const apiUrl2 = `https://citation-mu.vercel.app/recherche?query=${searchQuery}`;
-        
-        // **Choisir laquelle utiliser (vous pouvez définir une logique ici pour choisir l'URL)**
-        const response = await axios.get(apiUrl2); // Utiliser l'URL de recherche pour cet exemple
-        
+        // Appeler l'API avec la requête de recherche
+        const apiUrl = `https://citation-mu.vercel.app/search?query=${searchQuery}&page=${page}`;
+        const response = await axios.get(apiUrl);
+
         // Récupérer les articles de la réponse
-        const articles = response.data.articles; // Assurez-vous que la structure correspond
+        const articles = response.data.articles;
         userSearchState[senderId].articles = articles; // Stocker les articles pour la pagination
         
         // Nettoyer les caractères indésirables dans les articles
@@ -55,10 +52,10 @@ module.exports = async (senderId, prompt) => {
             const pair = articles.slice(i, i + 2); // Prendre deux articles à la fois
             let pairReply = "";
             pair.forEach(article => {
-                pairReply += `✅Titre✅ : ${cleanText(article.title)}\n`;
-                pairReply += `👉Auteur👈 : ${cleanText(article.author || 'Inconnu')}\n`;
-                pairReply += `😊Date😊 : ${cleanText(article.date)}\n`;
-                pairReply += `✅Résumé✅ : ${cleanText(article.summary)}\n\n`;
+                pairReply += `✅ Titre ✅ : ${cleanText(article.title)}\n`;
+                pairReply += `👉 Auteur 👈 : ${cleanText(article.author || 'Inconnu')}\n`;
+                pairReply += `😊 Date 😊 : ${cleanText(article.date)}\n`;
+                pairReply += `✅ Résumé ✅ : ${cleanText(article.summary)}\n\n`;
             });
             
             // Envoyer le message de la paire
@@ -87,3 +84,4 @@ module.exports.info = {
     description: "Permet de rechercher des articles sur des sujets variés et de naviguer entre les pages de résultats.",  // Description de la commande
     usage: "Envoyez 'citation <terme>' pour rechercher des articles ou '1', '2', etc. pour naviguer entre les pages."  // Comment utiliser la commande
 };
+            
