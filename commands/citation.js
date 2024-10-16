@@ -36,12 +36,15 @@ module.exports = async (senderId, prompt) => {
         const searchQuery = encodeURIComponent(userSearchState[senderId].query);
         const page = userSearchState[senderId].page;
 
-        // Appeler l'API avec la requête de recherche
-        const apiUrl = `https://citation-mu.vercel.app/search?query=${searchQuery}&page=${page}`;
-        const response = await axios.get(apiUrl);
-
+        // **Déclaration des deux URL**
+        const apiUrl1 = `https://citation-mu.vercel.app/search?query=${searchQuery}&page=${page}`;
+        const apiUrl2 = `https://citation-mu.vercel.app/recherche?query=${searchQuery}`;
+        
+        // **Choisir laquelle utiliser (vous pouvez définir une logique ici pour choisir l'URL)**
+        const response = await axios.get(apiUrl2); // Utiliser l'URL de recherche pour cet exemple
+        
         // Récupérer les articles de la réponse
-        const articles = response.data.articles;
+        const articles = response.data.articles; // Assurez-vous que la structure correspond
         userSearchState[senderId].articles = articles; // Stocker les articles pour la pagination
         
         // Nettoyer les caractères indésirables dans les articles
