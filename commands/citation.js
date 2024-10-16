@@ -52,10 +52,10 @@ module.exports = async (senderId, prompt) => {
             const pair = articles.slice(i, i + 2); // Prendre deux articles à la fois
             let pairReply = "";
             pair.forEach(article => {
-                pairReply += `**Titre :** ${cleanText(article.title)}\n`;
-                pairReply += `**Auteur :** ${cleanText(article.author || 'Inconnu')}\n`;
-                pairReply += `**Date :** ${cleanText(article.date)}\n`;
-                pairReply += `**Résumé :** ${cleanText(article.summary)}\n\n`;
+                pairReply += `✅Titre✅ : ${cleanText(article.title)}\n`;
+                pairReply += `👉Auteur👈 : ${cleanText(article.author || 'Inconnu')}\n`;
+                pairReply += `😊Date😊 : ${cleanText(article.date)}\n`;
+                pairReply += `✅Résumé✅ : ${cleanText(article.summary)}\n\n`;
             });
             
             // Envoyer le message de la paire
