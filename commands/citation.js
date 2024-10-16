@@ -43,17 +43,19 @@ module.exports = async (senderId, prompt) => {
         // Récupérer les articles de la réponse
         const articles = response.data.articles;
         userSearchState[senderId].articles = articles; // Stocker les articles pour la pagination
-        let reply = `Voici les résultats de votre recherche sur "${userSearchState[senderId].query}" (Page ${page}):\n\n`;
-
+        
+        // Nettoyer les caractères indésirables dans les articles
+        const cleanText = (text) => text.replace(/[^a-zA-Z0-9À-ÿ.,!?'"() ]/g, ''); // Exemple de nettoyage
+        
         // Envoyer les articles deux par deux
         for (let i = 0; i < articles.length; i += 2) {
             const pair = articles.slice(i, i + 2); // Prendre deux articles à la fois
             let pairReply = "";
             pair.forEach(article => {
-                pairReply += `**Titre :** ${article.title}\n`;
-                pairReply += `**Auteur :** ${article.author || 'Inconnu'}\n`;
-                pairReply += `**Date :** ${article.date}\n`;
-                pairReply += `**Résumé :** ${article.summary}\n\n`;
+                pairReply += `**Titre :** ${cleanText(article.title)}\n`;
+                pairReply += `**Auteur :** ${cleanText(article.author || 'Inconnu')}\n`;
+                pairReply += `**Date :** ${cleanText(article.date)}\n`;
+                pairReply += `**Résumé :** ${cleanText(article.summary)}\n\n`;
             });
             
             // Envoyer le message de la paire
@@ -82,4 +84,3 @@ module.exports.info = {
     description: "Permet de rechercher des articles sur des sujets variés et de naviguer entre les pages de résultats.",  // Description de la commande
     usage: "Envoyez 'citation <terme>' pour rechercher des articles ou '1', '2', etc. pour naviguer entre les pages."  // Comment utiliser la commande
 };
-            
