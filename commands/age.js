@@ -2,9 +2,15 @@ const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 module.exports = async (senderId, userText) => {
+    // Ajout d'un log pour vérifier ce que le bot reçoit comme texte utilisateur
+    console.log('Texte utilisateur reçu:', userText);
+
     // Extraire le texte après le préfixe 'age' et en supprimer les espaces superflus
     const args = userText.trim().split(/\s+/).slice(1); // Supprimer tous les espaces superflus entre les mots
     const birthday = args[0]; // Le premier argument après 'age' est la date de naissance
+
+    // Ajout d'un log pour vérifier ce que le bot extrait comme date de naissance
+    console.log('Date de naissance extraite:', birthday);
 
     // Vérifier si l'utilisateur a bien fourni une date
     if (!birthday) {
