@@ -3,9 +3,10 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, userText) => {
     // Extraire le texte après le préfixe 'age' et en supprimer les espaces superflus
-    const args = userText.trim().split(' ').slice(1); // Supposons que userText commence par 'ai'
-    const birthday = args[0]; // Le premier argument après 'ai' est la date de naissance
+    const args = userText.trim().split(/\s+/).slice(1); // Supprimer tous les espaces superflus entre les mots
+    const birthday = args[0]; // Le premier argument après 'age' est la date de naissance
 
+    // Vérifier si l'utilisateur a bien fourni une date
     if (!birthday) {
         return sendMessage(senderId, "Please provide your birthday in YYYY-MM-DD format.");
     }
@@ -13,15 +14,15 @@ module.exports = async (senderId, userText) => {
     const currentDate = new Date();
     const birthDate = new Date(birthday);
 
-    if (isNaN(birthDate.getTime())) { // Vérifier si la date est valide
+    // Vérifier si la date est valide
+    if (isNaN(birthDate.getTime())) {
         return sendMessage(senderId, "Invalid date format. Please use YYYY-MM-DD.");
     }
 
+    // Calculer l'âge
     const age = currentDate.getFullYear() - birthDate.getFullYear();
-
     birthDate.setFullYear(currentDate.getFullYear());
     const isBeforeBirthday = currentDate < birthDate;
-
     const finalAge = isBeforeBirthday ? age - 1 : age;
 
     return sendMessage(senderId, `Your age is ${finalAge}. Am I right?`);
