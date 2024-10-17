@@ -11,18 +11,19 @@ module.exports = async (senderId, prompt) => {
         const response = await axios.get(apiUrl);
 
         // Vérifier si des résultats ont été trouvés
-        if (response.data.search.length > 0) {
+        let reply;
+        if (response.data.search && response.data.search.length > 0) {
             // Récupérer les résultats pertinents
             const results = response.data.search.map(result => {
                 return {
                     label: result.label,
-                    description: result.description,
+                    description: result.description || "Aucune description disponible",
                     url: `https://www.wikidata.org/wiki/${result.id}`
                 };
             });
 
             // Créer une réponse formatée
-            let reply = `Voici ce que j'ai trouvé pour "${prompt}":\n\n`;
+            reply = `Voici ce que j'ai trouvé pour "${prompt}":\n\n`;
             results.forEach(result => {
                 reply += `- **${result.label}**: ${result.description}\n  [Voir plus](${result.url})\n`;
             });
@@ -45,7 +46,7 @@ module.exports = async (senderId, prompt) => {
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "action",  // Le nom de la commande modifié
+    name: "action",  // Le nom de la commande
     description: "Permet d'effectuer une action avec le ✨ Bot.",  // Description de la commande
     usage: "Envoyez 'action <message>' pour poser une question ou démarrer une action."  // Comment utiliser la commande
 };
