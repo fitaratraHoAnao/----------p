@@ -65,6 +65,8 @@ const handleMessage = async (event, api) => {
                 filePrompt = "Décrire le contenu de cette page HTML.";
             } else if (fileUrl.endsWith('.txt')) {
                 filePrompt = "Décrire le contenu de ce fichier texte.";
+            } else {
+                filePrompt = "Je ne peux pas analyser ce type de fichier.";
             }
         }
 
