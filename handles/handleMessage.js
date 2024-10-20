@@ -18,8 +18,8 @@ console.log('Les commandes suivantes ont été chargées :', Object.keys(command
 // Stocker les commandes actives pour chaque utilisateur
 const activeCommands = {};
 
-// Stocker l'historique des fichiers pour chaque utilisateur
-const fileHistory = {};
+// Stocker l'historique de l'image pour chaque utilisateur
+const imageHistory = {};
 
 const handleMessage = async (event, api) => {
     const senderId = event.sender.id;
@@ -44,56 +44,35 @@ const handleMessage = async (event, api) => {
         return;
     }
 
-    // Gérer les pièces jointes (images, PDF, DOC, DOCX, HTML, TXT)
-    if (message.attachments && message.attachments.length > 0) {
-        const attachment = message.attachments[0];
-        const fileUrl = attachment.payload.url; // URL du fichier envoyé
-        const fileType = attachment.type; // Type de fichier (image, fichier, etc.)
+    // Gérer les images envoyées par l'utilisateur
+    if (message.attachments && message.attachments[0].type === 'image') {
+        const imageUrl = message.attachments[0].payload.url; // URL de l'image envoyée
 
-        let filePrompt = '';
+        // Envoyer la question prédéfinie "Décrire cette photo"
+        await sendMessage(senderId, "Décrire cette photo ✨");
 
-        // Déterminer le type de fichier et définir le message prompt
-        if (fileType === 'image') {
-            filePrompt = "Décrire cette photo ✨";
-        } else if (fileType === 'file') {
-            // Vérifier l'extension du fichier
-            if (fileUrl.endsWith('.pdf')) {
-                filePrompt = "Décrire le contenu de ce fichier PDF.";
-            } else if (fileUrl.endsWith('.doc') || fileUrl.endsWith('.docx')) {
-                filePrompt = "Décrire le contenu de ce fichier Word.";
-            } else if (fileUrl.endsWith('.html')) {
-                filePrompt = "Décrire le contenu de cette page HTML.";
-            } else if (fileUrl.endsWith('.txt')) {
-                filePrompt = "Décrire le contenu de ce fichier texte.";
+        try {
+            // Sauvegarder l'image dans l'historique pour cet utilisateur
+            imageHistory[senderId] = imageUrl;
+
+            // Appeler l'API pour décrire l'image
+            const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
+                link: imageUrl, // URL de l'image
+                prompt: "Décrire cette photo", // Question prédéfinie
+                customId: senderId
+            });
+
+            const reply = response.data.message; // Réponse de l'API
+            if (reply) {
+                await sendMessage(senderId, `Bruno : voici ma suggestion de réponse pour cette image :\n${reply}`);
             } else {
-                filePrompt = "Je ne peux pas analyser ce type de fichier.";
+                await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour l'image.");
             }
+        } catch (error) {
+            console.error('Erreur lors de l\'analyse de l\'image :', error);
+            await sendMessage(senderId, "Une erreur s'est produite lors de la description de l'image.");
         }
-
-        if (filePrompt) {
-            // Envoyer le prompt correspondant au type de fichier
-            await sendMessage(senderId, filePrompt);
-
-            try {
-                // Appeler l'API pour analyser le fichier
-                const response = await axios.post('https://gemini-repond-tous-fichier.vercel.app/api/gemini', {
-                    link: fileUrl, // URL du fichier
-                    prompt: filePrompt, // Question basée sur le type de fichier
-                    customId: senderId
-                });
-
-                const reply = response.data.message; // Réponse de l'API
-                if (reply) {
-                    await sendMessage(senderId, `Bruno : voici ma suggestion de réponse pour ce fichier :\n${reply}`);
-                } else {
-                    await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour le fichier.");
-                }
-            } catch (error) {
-                console.error('Erreur lors de l\'analyse du fichier :', error);
-                await sendMessage(senderId, "Une erreur s'est produite lors de l'analyse du fichier.");
-            }
-            return; // Sortir après avoir géré le fichier
-        }
+        return; // Sortir après avoir géré l'image
     }
 
     // Vérifier s'il existe une commande active pour cet utilisateur (sauf pour la commande "menu")
@@ -127,7 +106,7 @@ const handleMessage = async (event, api) => {
     const customId = senderId;
 
     try {
-        const response = await axios.post('https://gemini-repond-tous-fichier.vercel.app/api/gemini', {
+        const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
             prompt,
             customId
         });
