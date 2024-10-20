@@ -56,7 +56,7 @@ const handleMessage = async (event, api) => {
             imageHistory[senderId] = imageUrl;
 
             // Appeler l'API pour décrire l'image
-            const response = await axios.post('https://gemini-repond-tous-fichier.vercel.app/api/gemini', {
+            const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
                 link: imageUrl, // URL de l'image
                 prompt: "Décrire cette photo", // Question prédéfinie
                 customId: senderId
@@ -106,7 +106,7 @@ const handleMessage = async (event, api) => {
     const customId = senderId;
 
     try {
-        const response = await axios.post('https://gemini-repond-tous-fichier.vercel.app/api/gemini', {
+        const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
             prompt,
             customId
         });
