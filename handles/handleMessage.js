@@ -18,7 +18,7 @@ console.log('Les commandes suivantes ont été chargées :', Object.keys(command
 // Stocker les commandes actives pour chaque utilisateur
 const activeCommands = {};
 
-// Stocker l'historique de l'image et des fichiers pour chaque utilisateur
+// Stocker l'historique des fichiers pour chaque utilisateur
 const fileHistory = {};
 
 const handleMessage = async (event, api) => {
@@ -51,26 +51,20 @@ const handleMessage = async (event, api) => {
         const fileType = attachment.type; // Type de fichier (image, fichier, etc.)
 
         let filePrompt = '';
-        let fileExtension = '';
 
         // Déterminer le type de fichier et définir le message prompt
         if (fileType === 'image') {
             filePrompt = "Décrire cette photo ✨";
-            fileExtension = '.jpg'; // Exemple d'extension pour les images
         } else if (fileType === 'file') {
             // Vérifier l'extension du fichier
-            if (attachment.payload.url.endsWith('.pdf')) {
+            if (fileUrl.endsWith('.pdf')) {
                 filePrompt = "Décrire le contenu de ce fichier PDF.";
-                fileExtension = '.pdf';
-            } else if (attachment.payload.url.endsWith('.doc') || attachment.payload.url.endsWith('.docx')) {
+            } else if (fileUrl.endsWith('.doc') || fileUrl.endsWith('.docx')) {
                 filePrompt = "Décrire le contenu de ce fichier Word.";
-                fileExtension = '.docx';
-            } else if (attachment.payload.url.endsWith('.html')) {
+            } else if (fileUrl.endsWith('.html')) {
                 filePrompt = "Décrire le contenu de cette page HTML.";
-                fileExtension = '.html';
-            } else if (attachment.payload.url.endsWith('.txt')) {
+            } else if (fileUrl.endsWith('.txt')) {
                 filePrompt = "Décrire le contenu de ce fichier texte.";
-                fileExtension = '.txt';
             }
         }
 
@@ -79,9 +73,6 @@ const handleMessage = async (event, api) => {
             await sendMessage(senderId, filePrompt);
 
             try {
-                // Sauvegarder le fichier dans l'historique pour cet utilisateur
-                fileHistory[senderId] = fileUrl;
-
                 // Appeler l'API pour analyser le fichier
                 const response = await axios.post('https://gemini-repond-tous-fichier.vercel.app/api/gemini', {
                     link: fileUrl, // URL du fichier
