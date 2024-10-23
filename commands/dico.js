@@ -37,9 +37,18 @@ module.exports = async (senderId, prompt) => {
                 return;
             }
 
-            // Filtrer les définitions vides et les joindre en une seule chaîne
-            const definitions = response.data.definitions.filter(def => def).join(", ");
-            await sendMessage(senderId, definitions);
+            // Filtrer les définitions vides
+            const definitions = response.data.definitions.filter(def => def);
+
+            // Formater la réponse
+            let formattedResponse = "🇲🇬" + letter + ", Rechercher un mot français🇲🇬:\n";
+
+            // Ajout des définitions avec emoji
+            definitions.forEach(def => {
+                formattedResponse += `✅ ${def}\n`;
+            });
+
+            await sendMessage(senderId, formattedResponse);
             return;
         }
 
