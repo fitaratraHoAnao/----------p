@@ -82,15 +82,18 @@ async function handleApiResponse(response, letter, senderId) {
     // Filtrer les définitions vides
     const definitions = response.data.definitions.filter(def => def);
 
-    // Formater la réponse
-    let formattedResponse = `🇲🇬${letter}, Rechercher un mot français🇲🇬:\n`;
-    formattedResponse += `✅ ABCDEFGHIJKLMNOPQRSTUVWXYZ\n`;
-    formattedResponse += `✅ ${letter}\n`;
-    formattedResponse += `✅ Rechercher un mot français:\n`;
+    // Vérifier s'il y a des définitions
+    if (definitions.length === 0) {
+        await sendMessage(senderId, `Aucune définition trouvée pour ${letter}.`);
+        return;
+    }
+
+    // Formater la réponse avec le style souhaité
+    let formattedResponse = `🇲🇬 Dictionnaire Français-Malagasy 🇲🇬:\n\n`;
+    formattedResponse += `❤️ Voici la réponse trouvée dans le dictionnaire pour les lettres ${letter} ❤️:\n\n`;
 
     // Ajout des définitions avec emoji
     definitions.forEach(def => {
-        // Ajout d'un espace entre le mot et son type
         const formattedDef = def.replace(/([a-zA-Z]+)(verbe|nom|adjectif|adverbe)/, '$1 $2');
         formattedResponse += `✅ ${formattedDef}\n`;
     });
