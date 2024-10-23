@@ -3,12 +3,14 @@ const sendMessage = require('../handles/sendMessage');
 
 module.exports = async (senderId, prompt) => {
     try {
+        // Informer l'utilisateur que le message est reçu et que le bot prépare une réponse
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
+        // URL des API pour obtenir la définition et la conjugaison
         const definitionApiUrl = `https://dictionnaire-francais-francais.vercel.app/recherche?dico=${encodeURIComponent(prompt)}`;
         const conjugaisonApiUrl = `https://dictionnaire-francais-francais.vercel.app/recherche?conjugaison=${encodeURIComponent(prompt)}`;
 
-        // Appels API
+        // Appels API pour récupérer les données
         const [definitionResponse, conjugaisonResponse] = await Promise.all([
             axios.get(definitionApiUrl),
             axios.get(conjugaisonApiUrl)
@@ -27,10 +29,10 @@ module.exports = async (senderId, prompt) => {
             throw new Error("Les données de conjugaison sont manquantes.");
         }
 
-        // Envoi des définitions
-        await sendMessage(senderId, definitionResponse.data.response);
+        // Envoi de la définition
+        await sendMessage(senderId, `👉 Voici la définition de ${prompt} :\n${definitionResponse.data.response}`);
 
-        // Envoi de la conjugaison, deux modes à la fois
+        // Envoi de la conjugaison, en séparant les modes
         const conjugaisonMessage = conjugaisonResponse.data.response;
         const modes = conjugaisonMessage.split("Mode :"); // Supposons que les modes commencent par "Mode :"
 
