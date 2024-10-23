@@ -84,9 +84,9 @@ async function handleApiResponse(response, letter, senderId) {
 
     // Formater la réponse
     let formattedResponse = `🇲🇬${letter}, Rechercher un mot français🇲🇬:\n`;
-    formattedResponse += `✅🇲🇬 Dictionnaire Français-Malagasy 🇲🇬:\n\n`;
+    formattedResponse += `🇲🇬 Dictionnaire Français-Malagasy 🇲🇬:\n\n`;
     formattedResponse += `✅ ${letter}\n`;
-    formattedResponse += `✅❤️ Voici la réponse trouvée dans le dictionnaire pour la lettre ${letter} ❤️:\n\n`;
+    formattedResponse += `❤️ Voici la réponse trouvée dans le dictionnaire pour la lettre ${letter} ❤️:\n\n`;
 
     // Ajout des définitions avec emoji
     definitions.forEach(def => {
