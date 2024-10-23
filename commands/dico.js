@@ -45,7 +45,9 @@ module.exports = async (senderId, prompt) => {
 
             // Ajout des définitions avec emoji
             definitions.forEach(def => {
-                formattedResponse += `✅ ${def}\n`;
+                // Ajout d'un espace entre le mot et son type
+                const formattedDef = def.replace(/([a-zA-Z]+)(verbe|nom|adjectif|adverbe)/, '$1 $2');
+                formattedResponse += `✅ ${formattedDef}\n`;
             });
 
             await sendMessage(senderId, formattedResponse);
