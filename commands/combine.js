@@ -1,9 +1,9 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage');
+const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 module.exports = async (senderId, prompt) => {
     try {
-        // Informer l'utilisateur que le message est reçu et que le bot prépare une réponse
+        // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
         // URL des API pour obtenir la définition et la conjugaison
@@ -49,4 +49,11 @@ module.exports = async (senderId, prompt) => {
         console.error('Erreur lors de l\'appel à l\'API:', error);
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
     }
+};
+
+// Ajouter les informations de la commande
+module.exports.info = {
+    name: "combiné",  // Le nom de la commande
+    description: "Fournit la définition et la conjugaison d'un mot.",  // Description de la commande
+    usage: "Envoyez 'combiné <mot>' pour obtenir la définition et la conjugaison."  // Comment utiliser la commande
 };
