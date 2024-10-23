@@ -1,8 +1,34 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
+// Un objet pour stocker les lettres et les pages des utilisateurs
+const userStates = {};
+
 module.exports = async (senderId, prompt) => {
     try {
+        // Vérifier si l'utilisateur a déjà une lettre stockée
+        const userState = userStates[senderId];
+
+        // Si l'utilisateur envoie une lettre suivie d'un numéro de page
+        if (prompt.match(/^([A-Z])\s*(\d+)$/)) {
+            const [_, letter, page] = prompt.match(/^([A-Z])\s*(\d+)$/);
+            userStates[senderId] = { letter: letter.toUpperCase() }; // Mettre à jour l'état de l'utilisateur avec la nouvelle lettre
+            const apiUrl = `https://dictionnairemlgfr.vercel.app/recherche?dictionnaire=${letter}&page=${page}`;
+            const response = await axios.get(apiUrl);
+            await handleApiResponse(response, letter, senderId);
+            return;
+        }
+
+        // Si l'utilisateur envoie juste un numéro de page
+        if (userState && prompt.match(/^\d+$/)) {
+            const page = prompt; // La page actuelle
+            const letter = userState.letter; // Récupérer la lettre stockée
+            const apiUrl = `https://dictionnairemlgfr.vercel.app/recherche?dictionnaire=${letter}&page=${page}`;
+            const response = await axios.get(apiUrl);
+            await handleApiResponse(response, letter, senderId);
+            return;
+        }
+
         // Vérifier si l'utilisateur a demandé le dictionnaire
         if (prompt.toLowerCase().startsWith('dico')) {
             // Extraire la commande et les arguments
@@ -27,30 +53,13 @@ module.exports = async (senderId, prompt) => {
                 return;
             }
 
+            // Stocker la lettre dans l'état de l'utilisateur
+            userStates[senderId] = { letter };
+
             // Construire l'URL de l'API
             const apiUrl = `https://dictionnairemlgfr.vercel.app/recherche?dictionnaire=${letter}&page=${page}`;
             const response = await axios.get(apiUrl);
-
-            // Vérifier la réponse de l'API
-            if (!response.data || !response.data.definitions) {
-                await sendMessage(senderId, "Erreur lors de la récupération des définitions.");
-                return;
-            }
-
-            // Filtrer les définitions vides
-            const definitions = response.data.definitions.filter(def => def);
-
-            // Formater la réponse
-            let formattedResponse = "🇲🇬" + letter + ", Rechercher un mot français🇲🇬:\n";
-
-            // Ajout des définitions avec emoji
-            definitions.forEach(def => {
-                // Ajout d'un espace entre le mot et son type
-                const formattedDef = def.replace(/([a-zA-Z]+)(verbe|nom|adjectif|adverbe)/, '$1 $2');
-                formattedResponse += `✅ ${formattedDef}\n`;
-            });
-
-            await sendMessage(senderId, formattedResponse);
+            await handleApiResponse(response, letter, senderId);
             return;
         }
 
@@ -61,6 +70,33 @@ module.exports = async (senderId, prompt) => {
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la recherche dans le dictionnaire.");
     }
 };
+
+// Fonction pour gérer la réponse de l'API
+async function handleApiResponse(response, letter, senderId) {
+    // Vérifier la réponse de l'API
+    if (!response.data || !response.data.definitions) {
+        await sendMessage(senderId, "Erreur lors de la récupération des définitions.");
+        return;
+    }
+
+    // Filtrer les définitions vides
+    const definitions = response.data.definitions.filter(def => def);
+
+    // Formater la réponse
+    let formattedResponse = `🇲🇬${letter}, Rechercher un mot français🇲🇬:\n`;
+    formattedResponse += `✅ ABCDEFGHIJKLMNOPQRSTUVWXYZ\n`;
+    formattedResponse += `✅ ${letter}\n`;
+    formattedResponse += `✅ Rechercher un mot français:\n`;
+
+    // Ajout des définitions avec emoji
+    definitions.forEach(def => {
+        // Ajout d'un espace entre le mot et son type
+        const formattedDef = def.replace(/([a-zA-Z]+)(verbe|nom|adjectif|adverbe)/, '$1 $2');
+        formattedResponse += `✅ ${formattedDef}\n`;
+    });
+
+    await sendMessage(senderId, formattedResponse);
+}
 
 // Ajouter les informations de la commande
 module.exports.info = {
