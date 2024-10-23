@@ -4,40 +4,49 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 module.exports = async (senderId, prompt) => {
     try {
         // Vérifier si l'utilisateur a demandé le dictionnaire
-        if (prompt.toLowerCase() === 'dico') {
-            await sendMessage(senderId, "Vous avez autorisé à utiliser le dictionnaire. Veuillez entrer une lettre (A-Z).");
-            return;
-        }
+        if (prompt.toLowerCase().startsWith('dico')) {
+            // Extraire la commande et les arguments
+            const args = prompt.split(' ').slice(1); // Enlever 'dico' et obtenir les arguments
+            if (args.length !== 2) {
+                await sendMessage(senderId, "Veuillez entrer la commande sous la forme : 'dico <lettre> <page>' (ex: dico A 25).");
+                return;
+            }
 
-        // Vérifier si l'utilisateur a entré une lettre
-        const letterMatch = prompt.match(/^([A-Z])$/i);
-        if (letterMatch) {
-            const letter = letterMatch[0].toUpperCase(); // Extraire la lettre et la convertir en majuscule
-            await sendMessage(senderId, `Vous avez choisi la lettre : ${letter}. Veuillez entrer un numéro de page (0, 25, 50, etc.).`);
-            return;
-        }
+            const letter = args[0].toUpperCase(); // Prendre la lettre en majuscule
+            const page = args[1]; // Prendre le numéro de page
 
-        // Vérifier si l'utilisateur a entré un numéro de page
-        const pageMatch = prompt.match(/^(\d+)$/);
-        if (pageMatch) {
-            const page = pageMatch[0]; // Extraire le numéro de page
+            // Vérifier si la lettre est valide (une seule lettre)
+            if (!/^[A-Z]$/.test(letter)) {
+                await sendMessage(senderId, "Veuillez entrer une lettre valide (A-Z).");
+                return;
+            }
+
+            // Vérifier si la page est un nombre valide
+            if (!/^\d+$/.test(page)) {
+                await sendMessage(senderId, "Veuillez entrer un numéro de page valide (0, 25, 50, etc.).");
+                return;
+            }
+
+            // Construire l'URL de l'API
             const apiUrl = `https://dictionnairemlgfr.vercel.app/recherche?dictionnaire=${letter}&page=${page}`;
             const response = await axios.get(apiUrl);
 
             // Vérifier la réponse de l'API
-            if (response.data && response.data.definitions) {
-                const definitions = response.data.definitions.filter(def => def); // Filtrer les définitions vides
-                await sendMessage(senderId, definitions.join(", "));
-            } else {
-                await sendMessage(senderId, "Aucune définition trouvée pour cette recherche.");
+            if (!response.data || !response.data.definitions) {
+                await sendMessage(senderId, "Erreur lors de la récupération des définitions.");
+                return;
             }
+
+            // Filtrer les définitions vides et les joindre en une seule chaîne
+            const definitions = response.data.definitions.filter(def => def).join(", ");
+            await sendMessage(senderId, definitions);
             return;
         }
 
         // Si la requête ne correspond à aucun des cas ci-dessus
-        await sendMessage(senderId, "Commande non reconnue. Utilisez 'dico' pour commencer.");
+        await sendMessage(senderId, "Commande non reconnue. Utilisez 'dico <lettre> <page>' pour rechercher dans le dictionnaire.");
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API du dictionnaire:', error);
+        console.error('Erreur lors de l\'appel à l\'API du dictionnaire:', error.response ? error.response.data : error.message);
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la recherche dans le dictionnaire.");
     }
 };
@@ -46,5 +55,5 @@ module.exports = async (senderId, prompt) => {
 module.exports.info = {
     name: "dico",  // Le nom de la commande
     description: "Permet de rechercher des mots dans le dictionnaire français-malgache.",  // Description de la commande
-    usage: "Envoyez 'dico' pour commencer, puis entrez une lettre et un numéro de page."  // Comment utiliser la commande
+    usage: "Envoyez 'dico <lettre> <page>' pour poser une question."  // Comment utiliser la commande
 };
