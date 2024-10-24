@@ -23,7 +23,7 @@ module.exports = async (senderId, prompt) => {
                 const message = `Titre: ${poeme.title}\nAuteur: ${poeme.author}`;
                 await sendMessage(senderId, message);
 
-                // Attendre 2 secondes entre chaque envoi pour éviter la surcharge
+                // Attendre que l'utilisateur ait reçu le message sur le titre et l'auteur
                 await new Promise(resolve => setTimeout(resolve, 2000));
 
                 // Envoyer l'audio sous forme de fichier MP3
