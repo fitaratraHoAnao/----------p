@@ -6,54 +6,50 @@ module.exports = async (senderId, prompt) => {
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // URL des API pour obtenir la définition et la conjugaison
-        const definitionApiUrl = `https://dictionnaire-francais-francais.vercel.app/recherche?dico=${encodeURIComponent(prompt)}`;
-        const conjugaisonApiUrl = `https://dictionnaire-francais-francais.vercel.app/recherche?conjugaison=${encodeURIComponent(prompt)}`;
+        // Déterminer si le mot est un verbe en fonction de sa terminaison
+        const verbEndings = ['er', 'ir', 're', 'oir'];
+        const isVerb = verbEndings.some(ending => prompt.toLowerCase().endsWith(ending));
 
-        // Appels API pour récupérer les données
-        const [definitionResponse, conjugaisonResponse] = await Promise.all([
-            axios.get(definitionApiUrl),
-            axios.get(conjugaisonApiUrl)
-        ]);
+        let reply = '';
 
-        console.log("Définition API Response:", definitionResponse.data);
-        console.log("Conjugaison API Response:", conjugaisonResponse.data);
+        if (isVerb) {
+            // Appel de l'API conjugaison pour les verbes
+            const conjugaisonUrl = `https://dictionnaire-francais-francais.vercel.app/recherche?conjugaison=${encodeURIComponent(prompt)}`;
+            const conjugaisonResponse = await axios.get(conjugaisonUrl);
+            const conjugaisonData = conjugaisonResponse.data.response;
 
-        // Vérification des données de définition
-        if (!definitionResponse.data.response) {
-            throw new Error("Les données de définition sont manquantes.");
+            // Extraire les deux premiers modes de conjugaison
+            const modes = conjugaisonData.split("Mode :");
+            reply += `Voici la conjugaison du verbe ${prompt} :\n${modes[1]}\n${modes[2]}`;
+
+            // Envoi des deux premiers modes successivement
+            await sendMessage(senderId, reply);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            reply = `Suite de la conjugaison du verbe ${prompt} :\n${modes[3]}\n${modes[4]}`;
+        } else {
+            // Appel de l'API définition pour les autres mots
+            const definitionUrl = `https://dictionnaire-francais-francais.vercel.app/recherche?dico=${encodeURIComponent(prompt)}`;
+            const definitionResponse = await axios.get(definitionUrl);
+            reply = definitionResponse.data.response;
         }
 
-        // Vérification des données de conjugaison
-        if (!conjugaisonResponse.data.response) {
-            throw new Error("Les données de conjugaison sont manquantes.");
-        }
+        // Attendre 2 secondes avant d'envoyer la réponse finale
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Envoi de la définition
-        await sendMessage(senderId, `👉 Voici la définition de ${prompt} :\n${definitionResponse.data.response}`);
-
-        // Envoi de la conjugaison, en séparant les modes
-        const conjugaisonMessage = conjugaisonResponse.data.response;
-        const modes = conjugaisonMessage.split("Mode :"); // Supposons que les modes commencent par "Mode :"
-
-        for (let i = 1; i < modes.length; i += 2) { // Envoie 2 modes par itération
-            let modeMessage = `Mode :${modes[i]}`;
-            if (modes[i + 1]) {
-                modeMessage += `\nMode :${modes[i + 1]}`;
-            }
-            await sendMessage(senderId, modeMessage);
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Pause de 2 secondes entre les messages
-        }
-
+        // Envoyer la réponse finale à l'utilisateur
+        await sendMessage(senderId, reply);
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API:', error);
+        console.error('Erreur lors de l\'appel aux APIs:', error);
+
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "combiné",  // Le nom de la commande
-    description: "Fournit la définition et la conjugaison d'un mot.",  // Description de la commande
-    usage: "Envoyez 'combiné <mot>' pour obtenir la définition et la conjugaison."  // Comment utiliser la commande
+    name: "combine",  // Le nom de la commande
+    description: "Permet de rechercher à la fois des conjugaisons et des définitions automatiquement en fonction du mot.",  // Description de la commande
+    usage: "Envoyez 'combine <mot>' pour obtenir la définition ou la conjugaison d'un mot."  // Comment utiliser la commande
 };
