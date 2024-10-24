@@ -19,27 +19,9 @@ module.exports = async (senderId, prompt) => {
             for (let i = 0; i < poemeList.length; i++) {
                 const poeme = poemeList[i];
 
-                // Envoyer le titre et l'auteur
-                const message = `Titre: ${poeme.title}\nAuteur: ${poeme.author}`;
-                await sendMessage(senderId, message);
-
-                // Attendre que l'utilisateur ait reçu le message sur le titre et l'auteur
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                // Envoyer l'audio sous forme de fichier MP3
-                const audioUrl = poeme.audio_url;
-                const audioMessage = {
-                    attachment: {
-                        type: 'audio',
-                        payload: {
-                            url: audioUrl,
-                        }
-                    }
-                };
-
-                // Envoyer l'audio MP3 à l'utilisateur
-                await sendMessage(senderId, audioMessage);
-
+                // Envoyer le titre, l'auteur et l'audio
+                await envoyerPoeme(senderId, poeme);
+                
                 // Attendre 2 secondes avant d'envoyer le prochain poème
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
@@ -54,6 +36,37 @@ module.exports = async (senderId, prompt) => {
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre demande d'audio.");
     }
+};
+
+// Fonction pour envoyer le titre, l'auteur et l'audio
+const envoyerPoeme = async (senderId, poeme) => {
+    // Envoyer le titre
+    const titreMessage = `Titre: ${poeme.title}`;
+    await sendMessage(senderId, titreMessage);
+
+    // Attendre que le message du titre soit envoyé
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Optionnel, pour une meilleure expérience utilisateur
+
+    // Envoyer l'auteur
+    const auteurMessage = `Auteur: ${poeme.author}`;
+    await sendMessage(senderId, auteurMessage);
+
+    // Attendre que le message de l'auteur soit envoyé
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Optionnel, pour une meilleure expérience utilisateur
+
+    // Envoyer l'audio sous forme de fichier MP3
+    const audioUrl = poeme.audio_url;
+    const audioMessage = {
+        attachment: {
+            type: 'audio',
+            payload: {
+                url: audioUrl,
+            }
+        }
+    };
+
+    // Envoyer l'audio MP3 à l'utilisateur
+    await sendMessage(senderId, audioMessage);
 };
 
 // Ajouter les informations de la commande
