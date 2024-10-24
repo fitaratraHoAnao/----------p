@@ -13,22 +13,36 @@ module.exports = async (senderId, prompt) => {
         let reply = '';
 
         if (isVerb) {
-            // Appel de l'API conjugaison pour les verbes
+            // Appeler les deux API (définition et conjugaison) pour les verbes
+            const definitionUrl = `https://dictionnaire-francais-francais.vercel.app/recherche?dico=${encodeURIComponent(prompt)}`;
             const conjugaisonUrl = `https://dictionnaire-francais-francais.vercel.app/recherche?conjugaison=${encodeURIComponent(prompt)}`;
-            const conjugaisonResponse = await axios.get(conjugaisonUrl);
+
+            // Faire des appels API en parallèle
+            const [definitionResponse, conjugaisonResponse] = await Promise.all([
+                axios.get(definitionUrl),
+                axios.get(conjugaisonUrl)
+            ]);
+
+            // Traiter la réponse de l'API conjugaison
             const conjugaisonData = conjugaisonResponse.data.response;
-
-            // Extraire les deux premiers modes de conjugaison
             const modes = conjugaisonData.split("Mode :");
-            reply += `Voici la conjugaison du verbe ${prompt} :\n${modes[1]}\n${modes[2]}`;
 
-            // Envoi des deux premiers modes successivement
+            reply += `Voici la conjugaison du verbe ${prompt} :\n${modes[1]}\n${modes[2]}`;
+            
+            // Envoyer la première partie de la conjugaison
             await sendMessage(senderId, reply);
+
+            // Attendre avant d'envoyer la suite de la conjugaison
             await new Promise(resolve => setTimeout(resolve, 2000));
 
+            // Envoyer la deuxième partie de la conjugaison
             reply = `Suite de la conjugaison du verbe ${prompt} :\n${modes[3]}\n${modes[4]}`;
+            await sendMessage(senderId, reply);
+
+            // Traiter la réponse de l'API définition
+            reply = definitionResponse.data.response;
         } else {
-            // Appel de l'API définition pour les autres mots
+            // Appeler uniquement l'API définition pour les autres mots
             const definitionUrl = `https://dictionnaire-francais-francais.vercel.app/recherche?dico=${encodeURIComponent(prompt)}`;
             const definitionResponse = await axios.get(definitionUrl);
             reply = definitionResponse.data.response;
@@ -37,7 +51,7 @@ module.exports = async (senderId, prompt) => {
         // Attendre 2 secondes avant d'envoyer la réponse finale
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Envoyer la réponse finale à l'utilisateur
+        // Envoyer la réponse finale à l'utilisateur (pour la définition dans les deux cas)
         await sendMessage(senderId, reply);
     } catch (error) {
         console.error('Erreur lors de l\'appel aux APIs:', error);
