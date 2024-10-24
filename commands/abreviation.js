@@ -1,20 +1,31 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
+let isAbreviationMode = false; // État de la conversation
+
 module.exports = async (senderId, prompt) => {
     try {
+        if (!isAbreviationMode) {
+            if (prompt === "abreviation") {
+                isAbreviationMode = true;
+                await sendMessage(senderId, "Vous pouvez maintenant me demander une abréviation spécifique ou me demander la liste des abréviations disponibles.");
+                return;
+            } else {
+                await sendMessage(senderId, "Veuillez commencer par 'abreviation' pour activer le mode d'abréviations.");
+                return;
+            }
+        }
+
+        // Appeler l'API en fonction du prompt
+        let apiUrl;
+        if (prompt === "liste") {
+            apiUrl = `https://abrviation.vercel.app/recherche?abreviation=liste`;
+        } else {
+            apiUrl = `https://abrviation.vercel.app/recherche?query=${encodeURIComponent(prompt)}`;
+        }
+
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
-
-        // Vérifier si le prompt est pour une recherche d'abréviation spécifique
-        let apiUrl;
-        if (prompt.startsWith("abreviation ")) {
-            const query = prompt.split(" ")[1]; // Extraire l'abréviation de la commande
-            apiUrl = `https://abrviation.vercel.app/recherche?query=${encodeURIComponent(query)}`;
-        } else {
-            // Si aucune abréviation spécifique n'est fournie, appeler l'API pour toutes les abréviations
-            apiUrl = `https://abrviation.vercel.app/recherche?abreviation=liste`;
-        }
 
         const response = await axios.get(apiUrl);
         let reply;
@@ -45,5 +56,5 @@ module.exports = async (senderId, prompt) => {
 module.exports.info = {
     name: "abreviation",  // Le nom de la commande
     description: "Recherche une abréviation ou affiche toutes les abréviations disponibles.",  // Description de la commande
-    usage: "Envoyez 'abreviation <abréviation>' pour rechercher une abréviation spécifique ou 'abreviation' pour voir toutes les abréviations."  // Comment utiliser la commande
+    usage: "Envoyez 'abreviation' pour activer le mode d'abréviations."  // Comment utiliser la commande
 };
