@@ -45,14 +45,24 @@ module.exports = async (senderId, prompt) => {
             return;
         }
 
-        // Construire la réponse à envoyer à l'utilisateur
-        let reply = `Ohabolana - Page ${page}:\n\n`;
-        ohabolanaList.forEach(ohabolana => {
-            reply += `${ohabolana.number} ${ohabolana.text} - ${ohabolana.author}\n\n`;
-        });
+        // Définir le nombre d'ohabolana à envoyer par message
+        const chunkSize = 5;
 
-        // Envoyer la réponse à l'utilisateur
-        await sendMessage(senderId, reply);
+        // Diviser les ohabolana en morceaux
+        for (let i = 0; i < ohabolanaList.length; i += chunkSize) {
+            const chunk = ohabolanaList.slice(i, i + chunkSize);
+            // Construire la réponse à envoyer à l'utilisateur
+            let reply = `Ohabolana - Page ${page} (partie ${Math.floor(i / chunkSize) + 1}):\n\n`;
+            chunk.forEach(ohabolana => {
+                reply += `${ohabolana.number} ${ohabolana.text} - ${ohabolana.author}\n\n`;
+            });
+
+            // Envoyer la réponse à l'utilisateur
+            await sendMessage(senderId, reply);
+
+            // Optionnel : attendre un peu entre les envois pour éviter une surcharge
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1 seconde d'attente
+        }
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API Ohabolana:', error);
 
