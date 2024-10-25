@@ -2,51 +2,33 @@ const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 module.exports = async (senderId, prompt) => {
-    try {
-        // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Recherche en cours... Je vais vous envoyer les images.");
+    try {
+        // Envoyer un message de confirmation que le message a été reçu
+        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Appeler l'API pour obtenir les images en fonction du prompt (ici la recherche d'images)
-        const apiUrl = `https://recherche-photo.vercel.app/recherche?photo=${encodeURIComponent(prompt)}&page=1`;
-        const response = await axios.get(apiUrl);
+        // Appeler l'API GPT avec le prompt de l'utilisateur
+        const apiUrl = `https://deku-rest-api.gleeze.com/new/gpt-3_5-turbo?prompt=${encodeURIComponent(prompt)}`;
+        const response = await axios.get(apiUrl);
 
-        // Récupérer les URLs des images dans la réponse de l'API
-        const images = response.data.images;
+        // Récupérer la bonne clé dans la réponse de l'API
+        const reply = response.data.result.reply;
 
-        // Vérifier si des images ont été trouvées
-        if (images.length === 0) {
-            await sendMessage(senderId, "Désolé, aucune image trouvée.");
-            return;
-        }
+        // Attendre 2 secondes avant d'envoyer la réponse
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Envoyer chaque image à l'utilisateur avec un délai de 1 seconde entre chaque
-        for (const imageUrl of images) {
-            await sendMessage(senderId, {
-                attachment: {
-                    type: 'image',
-                    payload: {
-                        url: imageUrl,
-                    },
-                },
-            });
+        // Envoyer la réponse de l'API à l'utilisateur
+        await sendMessage(senderId, reply);
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à l\'API GPT:', error);
 
-            // Attendre 1 seconde avant d'envoyer l'image suivante
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-
-        // Indiquer à l'utilisateur que toutes les images ont été envoyées
-        await sendMessage(senderId, "Toutes les images ont été envoyées.");
-    } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API photo:', error);
-
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la récupération des images.");
-    }
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
+    }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "photo",  // Le nom de la commande
-    description: "Recherche et envoie des images basées sur votre recherche.",  // Description de la commande
-    usage: "Envoyez 'photo <mot-clé>' pour rechercher et recevoir des images."  // Comment utiliser la commande
+    name: "chat",  // Le nom de la commande
+    description: "Permet de discuter avec le ✨ Bot.",  // Description de la commande
+    usage: "Envoyez 'chat <message>' pour poser une question ou démarrer une conversation."  // Comment utiliser la commande
 };
