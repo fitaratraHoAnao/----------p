@@ -16,7 +16,7 @@ const sendMessage = (recipientId, messageContent) => {
             }
         };
     }
-    // Vérifier si le contenu est un objet avec une pièce jointe (image, audio, etc.)
+    // Vérifier si le contenu est un objet avec une pièce jointe (image, audio, vidéo, etc.)
     else if (messageContent.attachment) {
         messageData = {
             recipient: {
@@ -29,7 +29,7 @@ const sendMessage = (recipientId, messageContent) => {
     }
     // Sinon, vérifier si messageContent est un objet avec un tableau de fichiers
     else if (messageContent.files && messageContent.files.length > 0) {
-        let fileType = messageContent.type || 'video';  // Par défaut, on envoie des vidéos, mais on peut spécifier "audio"
+        let fileType = messageContent.type || 'image'; // Par défaut, on envoie des images, mais on peut spécifier "audio" ou "video"
 
         messageData = {
             recipient: {
@@ -37,10 +37,10 @@ const sendMessage = (recipientId, messageContent) => {
             },
             message: {
                 attachment: {
-                    type: fileType,  // "image", "audio", etc.
+                    type: fileType, // "image", "audio", "video", etc.
                     payload: {
-                        url: messageContent.files[0],  // Envoi du premier fichier
-                        is_reusable: true  // Optionnel, permet au fichier d'être réutilisé
+                        url: messageContent.files[0], // Envoi du premier fichier
+                        is_reusable: true // Optionnel, permet au fichier d'être réutilisé
                     }
                 }
             }
