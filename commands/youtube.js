@@ -42,8 +42,16 @@ const youtube = async (senderId, searchQuery) => {
         const videoApiUrl = `https://youtube-api-milay.vercel.app/videos?watch=${selectedVideo.videoId}`;
         const videoResponse = await axios.get(videoApiUrl);
 
-        // Envoyer le lien de la vidéo à l'utilisateur
-        await sendMessage(senderId, `Voici votre vidéo : ${videoResponse.data.title}\n${videoResponse.data.url}`);
+        // Envoyer la vidéo en pièce jointe
+        await sendMessage(senderId, {
+            text: `Voici votre vidéo : ${videoResponse.data.title}`,
+            attachment: {
+                type: "video",
+                payload: {
+                    url: videoResponse.data.url
+                }
+            }
+        });
 
     } catch (error) {
         console.error("Erreur lors de la récupération des vidéos :", error.message);
