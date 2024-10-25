@@ -12,6 +12,9 @@ module.exports = async (senderId, prompt) => {
             const apiUrl = `https://audio-tononkalo.vercel.app/recherche?question=audio&page=1`;
             const response = await axios.get(apiUrl);
 
+            // Vérification et journalisation de la réponse de l'API
+            console.log('Réponse de l\'API:', response.data);
+
             // Récupérer la liste des poèmes (titre, auteur, URL audio)
             const poemeList = response.data;
 
@@ -40,38 +43,40 @@ module.exports = async (senderId, prompt) => {
 
 // Fonction pour envoyer le titre, l'auteur et l'audio
 const envoyerPoeme = async (senderId, poeme) => {
-    // Envoyer le titre
-    const titreMessage = `Titre: ${poeme.title}`;
-    await sendMessage(senderId, titreMessage);
+    try {
+        // Envoyer le titre
+        const titreMessage = `Titre: ${poeme.title}`;
+        await sendMessage(senderId, titreMessage);
 
-    // Attendre que le message du titre soit envoyé
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Optionnel, pour une meilleure expérience utilisateur
+        // Attendre que le message du titre soit envoyé
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Optionnel, pour une meilleure expérience utilisateur
 
-    // Envoyer l'auteur
-    const auteurMessage = `Auteur: ${poeme.author}`;
-    await sendMessage(senderId, auteurMessage);
+        // Envoyer l'auteur
+        const auteurMessage = `Auteur: ${poeme.author}`;
+        await sendMessage(senderId, auteurMessage);
 
-    // Attendre que le message de l'auteur soit envoyé
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Optionnel, pour une meilleure expérience utilisateur
+        // Attendre que le message de l'auteur soit envoyé
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Optionnel, pour une meilleure expérience utilisateur
 
-    // Envoyer l'audio sous forme de fichier MP3
-    const audioUrl = poeme.audio_url;
-    const audioMessage = {
-        attachment: {
-            type: 'audio',
-            payload: {
-                url: audioUrl, // URL de l'audio récupérée de l'API
+        // Envoyer l'audio sous forme de fichier MP3
+        const audioUrl = poeme.audio_url;
+        const audioMessage = {
+            attachment: {
+                type: 'audio',
+                payload: {
+                    url: audioUrl, // URL de l'audio récupérée de l'API
+                }
             }
-        }
-    };
+        };
 
-    // Envoyer l'audio MP3 à l'utilisateur
-    await sendMessage(senderId, audioMessage);
-};
+        // Envoyer l'audio MP3 à l'utilisateur
+        await sendMessage(senderId, audioMessage);
 
-// Ajouter les informations de la commande
-module.exports.info = {
-    name: "audio",  // Le nom de la commande
-    description: "Permet d'écouter les poèmes avec l'audio.",  // Description de la commande
-    usage: "Envoyez 'audio' pour obtenir la liste des poèmes avec leurs audios."  // Comment utiliser la commande
+        console.log(`Audio envoyé pour ${poeme.title} par ${poeme.author}`);
+    } catch (error) {
+        console.error('Erreur lors de l\'envoi de l\'audio:', error);
+
+        // Envoyer un message d'erreur en cas de problème avec l'envoi de l'audio
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors de l'envoi de l'audio.");
+    }
 };
