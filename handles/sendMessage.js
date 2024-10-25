@@ -17,16 +17,18 @@ const sendMessage = (recipientId, messageContent) => {
         };
     } else if (messageContent.files && messageContent.files.length > 0) {
         // Si messageContent est un objet avec un tableau de fichiers
+        let fileType = messageContent.type || 'image';  // Par défaut, on envoie des images, mais on peut spécifier "audio"
+
         messageData = {
             recipient: {
                 id: recipientId
             },
             message: {
                 attachment: {
-                    type: 'image',
+                    type: fileType,  // "image", "audio", etc.
                     payload: {
-                        url: messageContent.files[0],  // Envoi de la première image
-                        is_reusable: true  // Optionnel, permet à l'image d'être réutilisée
+                        url: messageContent.files[0],  // Envoi du premier fichier
+                        is_reusable: true  // Optionnel, permet au fichier d'être réutilisé
                     }
                 }
             }
@@ -39,10 +41,10 @@ const sendMessage = (recipientId, messageContent) => {
     // Envoyer la requête POST à l'API Messenger
     axios.post(`https://graph.facebook.com/v16.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, messageData)
         .then(response => {
-            console.log('Message sent successfully:', response.data);
+            console.log('Message envoyé avec succès:', response.data);
         })
         .catch(error => {
-            console.error('Error sending message:', error.response ? error.response.data : error.message);
+            console.error('Erreur lors de l\'envoi du message:', error.response ? error.response.data : error.message);
         });
 };
 
