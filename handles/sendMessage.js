@@ -5,7 +5,7 @@ const sendMessage = (recipientId, messageContent) => {
 
     let messageData;
 
-    // Vérifier si le contenu est une chaîne de texte ou un objet avec des fichiers
+    // Vérifier si le contenu est une chaîne de texte
     if (typeof messageContent === 'string') {
         messageData = {
             recipient: {
@@ -15,8 +15,20 @@ const sendMessage = (recipientId, messageContent) => {
                 text: messageContent
             }
         };
-    } else if (messageContent.files && messageContent.files.length > 0) {
-        // Si messageContent est un objet avec un tableau de fichiers
+    }
+    // Vérifier si le contenu est un objet avec une pièce jointe (image, audio, etc.)
+    else if (messageContent.attachment) {
+        messageData = {
+            recipient: {
+                id: recipientId
+            },
+            message: {
+                attachment: messageContent.attachment
+            }
+        };
+    }
+    // Sinon, vérifier si messageContent est un objet avec un tableau de fichiers
+    else if (messageContent.files && messageContent.files.length > 0) {
         let fileType = messageContent.type || 'image';  // Par défaut, on envoie des images, mais on peut spécifier "audio"
 
         messageData = {
