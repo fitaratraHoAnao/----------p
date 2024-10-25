@@ -60,7 +60,7 @@ const envoyerPoeme = async (senderId, poeme) => {
         attachment: {
             type: 'audio',
             payload: {
-                url: audioUrl,
+                url: audioUrl, // URL de l'audio récupérée de l'API
             }
         }
     };
