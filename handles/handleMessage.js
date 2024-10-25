@@ -20,6 +20,7 @@ const activeCommands = {};
 
 // Stocker l'historique de l'image pour chaque utilisateur
 const imageHistory = {};
+const userVideos = {}; // Stocker les vidéos pour chaque utilisateur
 
 const handleMessage = async (event, api) => {
     const senderId = event.sender.id;
@@ -112,6 +113,19 @@ const handleMessage = async (event, api) => {
             }
 
             return; // Sortir après l'exécution de la commande
+        }
+    }
+
+    // Vérifier si l'utilisateur a sélectionné une vidéo
+    if (userVideos[senderId]) {
+        const videoIndex = parseInt(message.text) - 1; // Convertir le texte de l'utilisateur en index (0-based)
+
+        if (videoIndex >= 0 && videoIndex < userVideos[senderId].length) {
+            await commands.youtube.handleVideoSelection(senderId, videoIndex); // Appeler la fonction pour gérer la sélection de la vidéo
+            return;
+        } else {
+            await sendMessage(senderId, "Numéro de vidéo invalide. Veuillez choisir un numéro de la liste.");
+            return;
         }
     }
 
