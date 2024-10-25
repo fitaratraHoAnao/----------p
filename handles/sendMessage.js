@@ -29,7 +29,7 @@ const sendMessage = (recipientId, messageContent) => {
     }
     // Sinon, vérifier si messageContent est un objet avec un tableau de fichiers
     else if (messageContent.files && messageContent.files.length > 0) {
-        let fileType = messageContent.type || 'image';  // Par défaut, on envoie des images, mais on peut spécifier "audio"
+        let fileType = messageContent.type || 'video';  // Par défaut, on envoie des vidéos, mais on peut spécifier "audio"
 
         messageData = {
             recipient: {
