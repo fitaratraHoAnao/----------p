@@ -1,83 +1,63 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Stocker temporairement les résultats de recherche pour chaque utilisateur
-let searchResultsMap = {};
+const userVideos = {}; // Stocker les vidéos pour chaque utilisateur
 
-module.exports = async (senderId, messageText) => {
+const youtubeCommand = async (senderId, query) => {
+    // URLs des API YouTube
+    const searchApiUrl = `https://youtube-api-milay.vercel.app/recherche?titre=${encodeURIComponent(query)}`;
+    const videoApiUrl = `https://youtube-api-milay.vercel.app/videos?watch=`; // URL de base pour obtenir les vidéos par numéro
+
     try {
-        // Vérifier si l'utilisateur a déjà effectué une recherche et attend un choix
-        if (searchResultsMap[senderId] && !isNaN(messageText)) {
-            // Si le message est un nombre, alors l'utilisateur veut télécharger une vidéo
-            const choice = parseInt(messageText);
-            const searchResults = searchResultsMap[senderId];
-            
-            // Vérifier si le choix est valide
-            if (choice >= 1 && choice <= searchResults.length) {
-                const selectedVideo = searchResults[choice - 1];
+        const response = await axios.get(searchApiUrl);
+        const videos = response.data.videos; // Assurez-vous que cette clé correspond à la structure de votre réponse
 
-                // Envoyer un message de confirmation que le téléchargement est en cours
-                await sendMessage(senderId, "Téléchargement en cours...");
-
-                // Appeler l'API Flask pour télécharger la vidéo choisie
-                const apiUrl = `https://recherche-youtube.onrender.com/regarde`;
-                try {
-                    const response = await axios.post(apiUrl, { choice });
-                    
-                    // Récupérer la réponse formatée
-                    const message = response.data.error ? response.data.error : "La vidéo a été téléchargée avec succès.";
-                    await sendMessage(senderId, message);
-                } catch (error) {
-                    console.error('Erreur lors de l\'appel à l\'API:', error.message);
-                    await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre commande. Détails : " + error.message);
-                }
-
-                // Effacer les résultats de recherche après le téléchargement
-                delete searchResultsMap[senderId];
-            } else {
-                await sendMessage(senderId, "Choix invalide. Veuillez entrer un numéro correspondant à une vidéo.");
-            }
-        } else {
-            // Si le message ne correspond pas à un choix, considérer que c'est une recherche
-            const parts = messageText.split(' ');
-            const commandGroup = parts[0];  // Ici, "youtube"
-            const query = parts.slice(1).join(' ');  // La requête de recherche
-
-            if (commandGroup.toLowerCase() === 'youtube') {
-                // Envoyer un message de confirmation que la recherche est en cours
-                await sendMessage(senderId, "Recherche en cours...");
-
-                // Appeler l'API Flask pour la recherche
-                const apiUrl = `https://recherche-youtube.onrender.com/recherche?query=${encodeURIComponent(query)}`;
-                const response = await axios.get(apiUrl);
-
-                // Récupérer les résultats de recherche
-                const searchResults = response.data.message ? response.data.message.split("\n").slice(1) : [];
-                if (searchResults.length === 0) {
-                    await sendMessage(senderId, "Aucun résultat trouvé.");
-                } else {
-                    // Stocker les résultats dans la mémoire temporaire
-                    searchResultsMap[senderId] = searchResults;
-
-                    // Envoyer la liste des vidéos à l'utilisateur
-                    await sendMessage(senderId, `Voici la liste des vidéos disponibles:\n${searchResults.join('\n')}`);
-                    await sendMessage(senderId, "Veuillez entrer un numéro pour télécharger la vidéo correspondante.");
-                    return; // Assurez-vous de sortir de la fonction ici pour attendre la réponse
-                }
-            } else {
-                await sendMessage(senderId, "Commande inconnue. Veuillez commencer votre message par 'youtube' suivi de la recherche.");
-            }
+        if (videos.length === 0) {
+            await sendMessage(senderId, "Aucune vidéo trouvée pour votre recherche.");
+            return;
         }
+
+        // Envoyer les titres des vidéos à l'utilisateur
+        let messageContent = "Voici les vidéos trouvées :\n";
+        videos.forEach((video, index) => {
+            messageContent += `${index + 1}. ${video.title}\n`;
+        });
+
+        await sendMessage(senderId, messageContent);
+
+        // Demander à l'utilisateur de choisir une vidéo
+        await sendMessage(senderId, "Veuillez choisir une vidéo en tapant son numéro.");
+
+        // Sauvegarder les vidéos pour cet utilisateur
+        userVideos[senderId] = videos; // Assurez-vous que `userVideos` est défini pour stocker les vidéos
     } catch (error) {
-        console.error('Erreur lors du traitement du message:', error);
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre commande.");
+        console.error('Erreur lors de la recherche YouTube:', error);
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la recherche de vidéos.");
     }
 };
 
-// Ajouter les informations de la commande
-module.exports.info = {
-    name: "youtube",  // Le nom de la commande
-    description: "Rechercher et télécharger des vidéos YouTube.",  // Description de la commande
-    usage: "Envoyez 'youtube <terme>' pour rechercher des vidéos et choisissez un numéro pour télécharger."  // Comment utiliser la commande 
+// Gestion de la sélection de la vidéo
+const handleVideoSelection = async (senderId, videoIndex) => {
+    const selectedVideo = userVideos[senderId][videoIndex];
+    const videoUrl = `https://www.youtube.com/watch?v=${selectedVideo.id}`; // Remplacez `id` par la clé appropriée de votre objet vidéo
+
+    // Préparer le message pour envoyer la vidéo
+    const videoMessage = {
+        type: "video",
+        files: [videoUrl] // Envoi de l'URL de la vidéo comme pièce jointe
+    };
+
+    await sendMessage(senderId, videoMessage);
+    delete userVideos[senderId]; // Supprimer les vidéos après l'envoi
+};
+
+// Informations sur la commande
+module.exports = {
+    youtubeCommand,
+    handleVideoSelection,
+    info: {
+        name: 'youtube',
+        description: 'Recherche des vidéos YouTube par titre.',
+        usage: 'youtube [titre]' // Exemple d'utilisation
+    }
 };
