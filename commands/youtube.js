@@ -3,35 +3,33 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, prompt) => {
     try {
-        // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
+        // Confirmer la réception du message
+        await sendMessage(senderId, "Message reçu, je prépare le téléchargement audio...");
 
-        // Construire l'URL de l'API avec le lien YouTube
+        // Construire l'URL pour l'API de téléchargement MP3 YouTube
         const apiUrl = `https://api-improve-production.up.railway.app/yt/download?url=${encodeURIComponent(prompt)}&format=mp3`;
         const response = await axios.get(apiUrl);
 
-        // Extraire les informations de la réponse de l'API
+        // Récupérer les informations depuis la réponse de l'API
         const { message, audio, info } = response.data;
 
-        // Vérifier si le téléchargement a été réussi
+        // Vérifier si le téléchargement a réussi
         if (message === "Audio downloaded successfully.") {
-            // Envoyer les informations à l'utilisateur
             const reply = `
                 🎶 Titre : ${info.title}
                 👤 Artiste : ${info.artist}
                 💽 Album : ${info.album}
                 📥 [Télécharger le MP3](${audio})
-                🖼️ Vignette : ${info.thumbnail}
             `;
             await sendMessage(senderId, reply);
         } else {
             await sendMessage(senderId, "Désolé, le téléchargement audio a échoué.");
         }
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API de téléchargement YouTube:', error);
+        console.error("Erreur lors de l'appel à l'API de téléchargement YouTube:", error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre demande.");
     }
 };
 
