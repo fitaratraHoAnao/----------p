@@ -1,72 +1,43 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-const youtube = async (senderId, searchQuery) => {
-    const apiUrl = `https://youtube-api-milay.vercel.app/recherche?titre=${encodeURIComponent(searchQuery)}`;
-
+module.exports = async (senderId, prompt) => {
     try {
-        // Appel à l'API pour rechercher des vidéos
+        // Envoyer un message de confirmation que le message a été reçu
+        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
+
+        // Construire l'URL de l'API avec le lien YouTube
+        const apiUrl = `https://api-improve-production.up.railway.app/yt/download?url=${encodeURIComponent(prompt)}&format=mp3`;
         const response = await axios.get(apiUrl);
-        const videos = response.data.videos;
 
-        // Vérifier si des vidéos ont été trouvées
-        if (videos.length === 0) {
-            await sendMessage(senderId, "Désolé, aucune vidéo trouvée pour votre recherche.");
-            return;
+        // Extraire les informations de la réponse de l'API
+        const { message, audio, info } = response.data;
+
+        // Vérifier si le téléchargement a été réussi
+        if (message === "Audio downloaded successfully.") {
+            // Envoyer les informations à l'utilisateur
+            const reply = `
+                🎶 Titre : ${info.title}
+                👤 Artiste : ${info.artist}
+                💽 Album : ${info.album}
+                📥 [Télécharger le MP3](${audio})
+                🖼️ Vignette : ${info.thumbnail}
+            `;
+            await sendMessage(senderId, reply);
+        } else {
+            await sendMessage(senderId, "Désolé, le téléchargement audio a échoué.");
         }
-
-        // Construire le message avec les titres des vidéos trouvées
-        let videoList = "Voici quelques vidéos que j'ai trouvées :\n";
-        videos.forEach((video, index) => {
-            videoList += `${index + 1}. ${video.title}\n`;
-        });
-
-        await sendMessage(senderId, videoList);
-
-        // Proposer à l'utilisateur de choisir une vidéo par son numéro
-        await sendMessage(senderId, "Veuillez répondre avec le numéro de la vidéo pour obtenir le lien.");
-
-        // Attendre la réponse de l'utilisateur
-        const userResponse = await waitForUserResponse(senderId); // Implémenter cette fonction pour attendre la réponse
-
-        const selectedIndex = parseInt(userResponse.text) - 1; // Convertir en index (0-based)
-        
-        if (selectedIndex < 0 || selectedIndex >= videos.length) {
-            await sendMessage(senderId, "Numéro invalide. Veuillez réessayer.");
-            return;
-        }
-
-        const selectedVideo = videos[selectedIndex];
-
-        // Appel à la deuxième API pour obtenir le lien vidéo
-        const videoApiUrl = `https://youtube-api-milay.vercel.app/videos?watch=${selectedVideo.videoId}`;
-        const videoResponse = await axios.get(videoApiUrl);
-
-        // Envoyer la vidéo en pièce jointe
-        await sendMessage(senderId, {
-            text: `Voici votre vidéo : ${videoResponse.data.title}`,
-            attachment: {
-                type: "video",
-                payload: {
-                    url: videoResponse.data.url
-                }
-            }
-        });
-
     } catch (error) {
-        console.error("Erreur lors de la récupération des vidéos :", error.message);
-        await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la recherche de vidéos.");
+        console.error('Erreur lors de l\'appel à l\'API de téléchargement YouTube:', error);
+
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
     }
 };
 
-// Fonction pour attendre la réponse de l'utilisateur
-const waitForUserResponse = async (senderId) => {
-    // Implémentez ici la logique pour écouter et retourner la réponse de l'utilisateur.
-    // Cela pourrait impliquer l'utilisation de WebSocket ou d'autres mécanismes d'écoute.
-};
-
-module.exports = youtube;
+// Ajouter les informations de la commande
 module.exports.info = {
-    name: 'youtube',
-    description: 'Rechercher des vidéos YouTube sur un artiste ou un titre',
+    name: "youtube",  // Nouveau nom de la commande
+    description: "Permet de télécharger l'audio d'une vidéo YouTube en MP3.",  // Nouvelle description de la commande
+    usage: "Envoyez 'youtube <lien YouTube>' pour télécharger l'audio de la vidéo."  // Nouveau usage de la commande
 };
