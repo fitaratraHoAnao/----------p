@@ -6,24 +6,30 @@ module.exports = async (senderId, prompt) => {
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Informer l'utilisateur que cela peut prendre un certain temps
-        await sendMessage(senderId, "Veuillez patienter, la recherche de la vidéo peut prendre quelques instants...");
+        // Déterminer s'il s'agit d'une requête pour des vidéos
+        const query = encodeURIComponent(prompt);
+        const apiUrl = `https://youtube-api-milay.vercel.app/recherche?titre=${query}`;
 
-        // Faire une requête à l'API pour rechercher la vidéo
-        const apiUrl = "https://youtube-api-milay.vercel.app/recherche?titre=Black%20Nadia";
+        // Envoyer un message de confirmation de recherche
+        await sendMessage(senderId, "Recherche de vidéos en cours...");
+
+        // Appeler l'API de recherche de vidéos
         const response = await axios.get(apiUrl);
 
-        // Vérifier si des vidéos ont été trouvées
-        if (response.data.videos && response.data.videos.length > 0) {
-            // Prendre la première vidéo trouvée
-            const firstVideo = response.data.videos[0];
-            const videoUrl = firstVideo.url; // URL de la vidéo
+        // Récupérer les vidéos de la réponse de l'API
+        const videos = response.data.videos;
 
-            // Envoyer un message informant que l'envoi de la vidéo est en cours
-            await sendMessage(senderId, "Envoi de la vidéo en cours, veuillez patienter...");
+        // Vérifier si des vidéos sont retournées
+        if (videos && videos.length > 0) {
+            // Prendre la première vidéo de la liste
+            const video = videos[0];
+            const videoUrl = video.url;
 
-            // Ici, vous devriez d'abord essayer d'envoyer la vidéo
-            const videoMessage = {
+            // Envoyer un message d'attente pour le téléchargement
+            await sendMessage(senderId, "Téléchargement de la vidéo en cours...");
+
+            // Envoi de la vidéo en pièce jointe
+            await sendMessage(senderId, {
                 attachment: {
                     type: 'video', // Spécifier que c'est une vidéo
                     payload: {
@@ -31,28 +37,25 @@ module.exports = async (senderId, prompt) => {
                         is_reusable: true
                     }
                 }
-            };
+            });
 
-            // Essayer d'envoyer la vidéo
-            await sendMessage(senderId, videoMessage);
-
-            // Après avoir tenté d'envoyer la vidéo, confirmer que l'envoi a eu lieu
-            await sendMessage(senderId, "La vidéo a été envoyée : " + firstVideo.title);
+            // Envoyer un message final une fois la vidéo envoyée
+            await sendMessage(senderId, "Voici la vidéo que vous avez demandée !");
         } else {
-            // Aucune vidéo trouvée
-            await sendMessage(senderId, "Désolé, aucune vidéo trouvée pour 'Black Nadia'.");
+            // Si aucune vidéo n'est trouvée, informer l'utilisateur
+            await sendMessage(senderId, "Aucune vidéo trouvée pour votre recherche.");
         }
     } catch (error) {
-        console.error("Erreur lors de l'envoi de la vidéo:", error);
+        console.error("Erreur lors de la récupération des vidéos:", error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "Désolé, une erreur s'est produite lors de l'envoi de la vidéo.");
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre demande.");
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "video",  // Le nom de la commande
-    description: "Envoie une vidéo basée sur le texte saisi.",  // Description de la commande
-    usage: "Envoyez 'video <titre>' pour envoyer une vidéo."  // Comment utiliser la commande
+    description: "Recherche et envoie une vidéo basée sur le texte saisi.",  // Description de la commande
+    usage: "Envoyez 'video <recherche>' pour rechercher une vidéo."  // Comment utiliser la commande
 };
