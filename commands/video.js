@@ -6,22 +6,33 @@ module.exports = async (senderId, prompt) => {
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Remplace par la logique de récupération de l'URL de la vidéo
-        const videoUrl = "https://www.youtube.com/watch?v=ffgO4yshj-0"; // URL de la vidéo YouTube
+        // Faire une requête à l'API pour rechercher la vidéo
+        const apiUrl = "https://youtube-api-milay.vercel.app/recherche?titre=Black%20Nadia";
+        const response = await axios.get(apiUrl);
 
-        // Envoyer un message avec la vidéo
-        await sendMessage(senderId, {
-            attachment: {
-                type: 'video', // Spécifier que c'est une vidéo
-                payload: {
-                    url: videoUrl, // URL de la vidéo
-                    is_reusable: true
+        // Vérifier si des vidéos ont été trouvées
+        if (response.data.videos && response.data.videos.length > 0) {
+            // Prendre la première vidéo trouvée
+            const firstVideo = response.data.videos[0];
+            const videoUrl = firstVideo.url; // URL de la vidéo
+
+            // Envoyer un message avec la vidéo
+            await sendMessage(senderId, {
+                attachment: {
+                    type: 'video', // Spécifier que c'est une vidéo
+                    payload: {
+                        url: videoUrl, // URL de la vidéo
+                        is_reusable: true
+                    }
                 }
-            }
-        });
+            });
 
-        // Envoyer un message final une fois la vidéo envoyée
-        await sendMessage(senderId, "La vidéo a été envoyée.");
+            // Envoyer un message final une fois la vidéo envoyée
+            await sendMessage(senderId, "La vidéo a été envoyée : " + firstVideo.title);
+        } else {
+            // Aucune vidéo trouvée
+            await sendMessage(senderId, "Désolé, aucune vidéo trouvée pour 'Black Nadia'.");
+        }
     } catch (error) {
         console.error("Erreur lors de l'envoi de la vidéo:", error);
 
