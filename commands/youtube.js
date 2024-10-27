@@ -1,81 +1,45 @@
-const axios = require("axios");
+const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-module.exports = {
-  config: {
-    name: "youtube",
-    author: "Jun",
-    countDown: 10,
-    role: 0,
-    category: "media"
-  },
-
-  info: {
-    usage: "youtube <music ou video> <titre>",
-    description: "Recherche des vidéos sur YouTube et permet de télécharger l'audio d'une vidéo choisie.",
-    example: "youtube music metamorphosis"
-  },
-
-  execute: async function (senderId, prompt) {
+module.exports = async (senderId, prompt) => {
     try {
-      // Envoyer un message de confirmation que le message a été reçu
-      await sendMessage(senderId, "Message reçu, je prépare une réponse...");
+        // Envoyer un message de confirmation que le message a été reçu
+        await sendMessage(senderId, "Recherche en cours...");
 
-      const args = prompt.split(' ');
-      const type = args[0]?.toLowerCase();
+        // Appeler l'API de recherche YouTube avec le prompt de l'utilisateur
+        const apiUrlSearch = `https://api-improve-production.up.railway.app/yt/search?q=${encodeURIComponent(prompt)}`;
+        const searchResponse = await axios.get(apiUrlSearch);
 
-      // Validation du type
-      if (!type || !['music', 'video'].includes(type)) {
-        return await sendMessage(senderId, `Usage invalide. Veuillez utiliser : ${this.info.usage}`);
-      }
+        // Récupérer et traiter les résultats
+        const items = searchResponse.data.items;
+        if (!items || items.length === 0) {
+            await sendMessage(senderId, "Aucune vidéo trouvée pour cet artiste.");
+            return;
+        }
 
-      const title = args.slice(1).join(" ");
-      if (!title) return await sendMessage(senderId, "Veuillez ajouter un titre.");
+        // Créer une liste de titres numérotés
+        let message = "Voici les vidéos trouvées :\n";
+        items.forEach((item, index) => {
+            message += `${index + 1}. ${item.snippet.title}\n`;
+        });
 
-      // Appel à l'API de recherche YouTube
-      const { data: searchData } = await axios.get(`https://api-improve-production.up.railway.app/yt/search?q=${encodeURIComponent(title)}`);
-      const videos = searchData.videos.slice(0, 6);
+        // Envoyer la liste de vidéos à l'utilisateur
+        await sendMessage(senderId, message);
 
-      // Vérifier s'il y a des vidéos trouvées
-      if (videos.length === 0) {
-        return await sendMessage(senderId, "Aucune vidéo trouvée. Veuillez essayer avec un autre titre.");
-      }
+        // Attendre le choix de l'utilisateur pour télécharger
+        // (Ajouter un gestionnaire pour récupérer le choix de l'utilisateur et lancer le téléchargement si besoin)
 
-      // Construire le message avec les vidéos disponibles
-      const videoListMessage = videos.map((vid, i) => `${i + 1}. ${vid.title}\nDurée: ${vid.duration}\n`).join("\n") + "\nVeuillez choisir une vidéo en répondant avec un numéro de 1 à 6.";
-
-      // Envoyer le message avec les titres des vidéos
-      const { messageID } = await sendMessage(senderId, videoListMessage, {
-        attachment: await Promise.all(videos.map(video => global.utils.getStreamFromURL(video.thumb)))
-      });
-
-      // Stocker la réponse pour le traitement ultérieur
-      global.GoatBot.onReply.set(messageID, {
-        commandName: this.config.name,
-        messageID,
-        videos,
-        type,
-        sender: senderId
-      });
     } catch (error) {
-      console.error('Erreur lors de la recherche YouTube :', error);
-      await sendMessage(senderId, error.response?.data?.error || error.message);
-    }
-  },
+        console.error("Erreur lors de l'appel à l'API YouTube:", error);
 
-  handleVideoDownload: async function (senderId, videoIndex, videos) {
-    try {
-      const video = videos[videoIndex - 1];
-      if (!video) return await sendMessage(senderId, "Vidéo non trouvée.");
-
-      // Télécharger l'audio de la vidéo choisie
-      const { data: downloadData } = await axios.get(`https://api-improve-production.up.railway.app/yt/download?url=${encodeURIComponent(video.url)}&format=mp3`);
-      
-      // Envoyer le fichier audio à l'utilisateur
-      await sendMessage(senderId, "Voici votre audio :", { attachment: downloadData });
-    } catch (error) {
-      console.error('Erreur lors du téléchargement de la vidéo :', error);
-      await sendMessage(senderId, error.response?.data?.error || error.message);
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
     }
-  }
+};
+
+// Ajouter les informations de la commande
+module.exports.info = {
+    name: "youtube",  // Le nom de la commande
+    description: "Recherche des vidéos d'un artiste sur YouTube.",  // Description de la commande
+    usage: "Envoyez 'youtube <nom de l'artiste>' pour rechercher des vidéos et sélectionner celles à télécharger."  // Comment utiliser la commande
 };
