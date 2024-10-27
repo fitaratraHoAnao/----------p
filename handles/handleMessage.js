@@ -67,8 +67,8 @@ const handleMessage = async (event, api) => {
                     });
                     const textInImage = textResponse.data.message || '';
 
-                    // Vérifier si le texte contient un "?" ou un numéro de question comme "1)", "2)", etc.
-                    const questionPattern = /(\b\d+\)\b|\?)/;
+                    // Détecter la présence de "?" ou de formats d'exercice tels que "1)", "a)", "Exercice", etc.
+                    const questionPattern = /(\b\d+\)|\b[a-z]\)|Exercice|\?)/i;
                     const prompt = questionPattern.test(textInImage) 
                         ? "Faire cet exercice et donner la correction complète de cet exercice" 
                         : "Décrire cette photo";
