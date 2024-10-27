@@ -4,8 +4,29 @@ const userSessions = {}; // Pour stocker l'état de chaque utilisateur
 
 module.exports = async (senderId, prompt) => {
     try {
-        // Vérifier si l'utilisateur est en train de sélectionner une vidéo
-        if (userSessions[senderId] && !isNaN(prompt)) {
+        // Vérifier si l'utilisateur est en train de sélectionner un format de téléchargement
+        if (userSessions[senderId] && userSessions[senderId].selectedVideo && (prompt.toLowerCase() === "mp4" || prompt.toLowerCase() === "mp3")) {
+            const videoData = userSessions[senderId].selectedVideo;
+            const format = prompt.toLowerCase();
+
+            // URL pour télécharger en fonction du format choisi
+            const apiUrlDownload = `https://api-improve-production.up.railway.app/yt/download?url=https://www.youtube.com/watch?v=${videoData.id.videoId}&format=${format}`;
+
+            // Appel à l'API pour télécharger l'audio ou la vidéo
+            const downloadResponse = await axios.get(apiUrlDownload);
+
+            // Envoyer le lien de téléchargement à l'utilisateur
+            const responseMessage = format === 'mp4' 
+                ? `Téléchargement vidéo prêt : ${downloadResponse.data.video}`
+                : `Téléchargement audio prêt : ${downloadResponse.data.audio}`;
+                
+            await sendMessage(senderId, responseMessage);
+
+            // Réinitialiser la session
+            delete userSessions[senderId];
+
+        } else if (userSessions[senderId] && !isNaN(prompt)) {
+            // L'utilisateur a choisi un numéro de vidéo
             const videoChoice = parseInt(prompt) - 1;
             const videoData = userSessions[senderId].videos[videoChoice];
 
@@ -14,16 +35,10 @@ module.exports = async (senderId, prompt) => {
                 return;
             }
 
-            // Appeler l'API de téléchargement avec l'ID de la vidéo sélectionnée
-            const apiUrlDownload = `https://api-improve-production.up.railway.app/yt/download?url=https://www.youtube.com/watch?v=${videoData.id.videoId}&format=mp4&quality=360`;
-            const downloadResponse = await axios.get(apiUrlDownload);
-
-            // Envoyer le lien de téléchargement à l'utilisateur
-            await sendMessage(senderId, `Téléchargement prêt : ${downloadResponse.data.video}`);
-            
-            // Réinitialiser la session
-            delete userSessions[senderId];
-
+            // Stocker la vidéo sélectionnée et demander le format
+            userSessions[senderId].selectedVideo = videoData;
+            await sendMessage(senderId, "Quel format souhaitez-vous pour le téléchargement : MP3 (audio) ou MP4 (vidéo) ?");
+        
         } else {
             // Démarrer une nouvelle recherche
             await sendMessage(senderId, "Recherche en cours...");
@@ -46,7 +61,7 @@ module.exports = async (senderId, prompt) => {
             items.forEach((item, index) => {
                 message += `${index + 1}. ${item.snippet.title}\n`;
             });
-            await sendMessage(senderId, message + "\nVeuillez envoyer le numéro de votre choix pour télécharger.");
+            await sendMessage(senderId, message + "\nVeuillez envoyer le numéro de votre choix pour sélectionner une vidéo.");
         }
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API YouTube:", error);
@@ -56,6 +71,6 @@ module.exports = async (senderId, prompt) => {
 
 module.exports.info = {
     name: "youtube",
-    description: "Recherche des vidéos d'un artiste sur YouTube et permet de télécharger la vidéo choisie.",
-    usage: "Envoyez 'youtube <nom de l'artiste>' pour rechercher des vidéos et sélectionnez celles à télécharger."
+    description: "Recherche des vidéos d'un artiste sur YouTube et permet de télécharger en audio (MP3) ou vidéo (MP4).",
+    usage: "Envoyez 'youtube <nom de l'artiste>' pour rechercher des vidéos et sélectionnez celles à télécharger en audio ou vidéo."
 };
