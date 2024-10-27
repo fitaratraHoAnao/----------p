@@ -1,45 +1,61 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
+const sendMessage = require('../handles/sendMessage');
+const userSessions = {}; // Pour stocker l'état de chaque utilisateur
 
 module.exports = async (senderId, prompt) => {
     try {
-        // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Recherche en cours...");
+        // Vérifier si l'utilisateur est en train de sélectionner une vidéo
+        if (userSessions[senderId] && !isNaN(prompt)) {
+            const videoChoice = parseInt(prompt) - 1;
+            const videoData = userSessions[senderId].videos[videoChoice];
 
-        // Appeler l'API de recherche YouTube avec le prompt de l'utilisateur
-        const apiUrlSearch = `https://api-improve-production.up.railway.app/yt/search?q=${encodeURIComponent(prompt)}`;
-        const searchResponse = await axios.get(apiUrlSearch);
+            if (!videoData) {
+                await sendMessage(senderId, "Choix invalide. Veuillez réessayer.");
+                return;
+            }
 
-        // Récupérer et traiter les résultats
-        const items = searchResponse.data.items;
-        if (!items || items.length === 0) {
-            await sendMessage(senderId, "Aucune vidéo trouvée pour cet artiste.");
-            return;
+            // Appeler l'API de téléchargement avec l'ID de la vidéo sélectionnée
+            const apiUrlDownload = `https://api-improve-production.up.railway.app/yt/download?url=https://www.youtube.com/watch?v=${videoData.id.videoId}&format=mp4&quality=360`;
+            const downloadResponse = await axios.get(apiUrlDownload);
+
+            // Envoyer le lien de téléchargement à l'utilisateur
+            await sendMessage(senderId, `Téléchargement prêt : ${downloadResponse.data.video}`);
+            
+            // Réinitialiser la session
+            delete userSessions[senderId];
+
+        } else {
+            // Démarrer une nouvelle recherche
+            await sendMessage(senderId, "Recherche en cours...");
+
+            // Appeler l'API de recherche YouTube
+            const apiUrlSearch = `https://api-improve-production.up.railway.app/yt/search?q=${encodeURIComponent(prompt)}`;
+            const searchResponse = await axios.get(apiUrlSearch);
+
+            const items = searchResponse.data.items;
+            if (!items || items.length === 0) {
+                await sendMessage(senderId, "Aucune vidéo trouvée pour cet artiste.");
+                return;
+            }
+
+            // Stocker les résultats dans userSessions
+            userSessions[senderId] = { videos: items };
+
+            // Envoyer la liste de vidéos à l'utilisateur
+            let message = "Voici les vidéos trouvées :\n";
+            items.forEach((item, index) => {
+                message += `${index + 1}. ${item.snippet.title}\n`;
+            });
+            await sendMessage(senderId, message + "\nVeuillez envoyer le numéro de votre choix pour télécharger.");
         }
-
-        // Créer une liste de titres numérotés
-        let message = "Voici les vidéos trouvées :\n";
-        items.forEach((item, index) => {
-            message += `${index + 1}. ${item.snippet.title}\n`;
-        });
-
-        // Envoyer la liste de vidéos à l'utilisateur
-        await sendMessage(senderId, message);
-
-        // Attendre le choix de l'utilisateur pour télécharger
-        // (Ajouter un gestionnaire pour récupérer le choix de l'utilisateur et lancer le téléchargement si besoin)
-
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API YouTube:", error);
-
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
     }
 };
 
-// Ajouter les informations de la commande
 module.exports.info = {
-    name: "youtube",  // Le nom de la commande
-    description: "Recherche des vidéos d'un artiste sur YouTube.",  // Description de la commande
-    usage: "Envoyez 'youtube <nom de l'artiste>' pour rechercher des vidéos et sélectionner celles à télécharger."  // Comment utiliser la commande
+    name: "youtube",
+    description: "Recherche des vidéos d'un artiste sur YouTube et permet de télécharger la vidéo choisie.",
+    usage: "Envoyez 'youtube <nom de l'artiste>' pour rechercher des vidéos et sélectionnez celles à télécharger."
 };
