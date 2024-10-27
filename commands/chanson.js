@@ -24,7 +24,7 @@ module.exports = async (senderId, prompt) => {
             if (songData && songData.image) {
                 const reply = `❣️Titre 👉 ${songData.title}\n` +
                               `❣️Artiste 👉 ${songData.artist}\n` +
-                              `❣️Paroles 👉\n${songData.lyrics}`;
+                              `❣️Paroles 👇\n${songData.lyrics}`;
 
                 // Envoyer les informations de la chanson avec l'image
                 await sendMessage(senderId, reply);
