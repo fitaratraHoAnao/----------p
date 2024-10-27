@@ -6,6 +6,9 @@ module.exports = async (senderId, prompt) => {
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
+        // Informer l'utilisateur que cela peut prendre un certain temps
+        await sendMessage(senderId, "Veuillez patienter, la recherche de la vidéo peut prendre quelques instants...");
+
         // Faire une requête à l'API pour rechercher la vidéo
         const apiUrl = "https://youtube-api-milay.vercel.app/recherche?titre=Black%20Nadia";
         const response = await axios.get(apiUrl);
@@ -16,7 +19,10 @@ module.exports = async (senderId, prompt) => {
             const firstVideo = response.data.videos[0];
             const videoUrl = firstVideo.url; // URL de la vidéo
 
-            // Envoyer un message avec la vidéo
+            // Envoyer un message informant que l'envoi de la vidéo est en cours
+            await sendMessage(senderId, "Envoi de la vidéo en cours, veuillez patienter...");
+
+            // Envoyer le message avec la vidéo
             await sendMessage(senderId, {
                 attachment: {
                     type: 'video', // Spécifier que c'est une vidéo
