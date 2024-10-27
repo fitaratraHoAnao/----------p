@@ -4,9 +4,9 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 module.exports = async (senderId, prompt) => {
     try {
         // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
+        await sendMessage(senderId, "🇲🇬 *Bruno* rédige sa réponse... un instant, s'il vous plaît 🍟");
 
-        // Déterminer s'il s'agit d'une requête pour des vidéos
+        // Déterminer la requête pour les vidéos
         const query = encodeURIComponent(prompt);
         const apiUrl = `https://youtube-api-milay.vercel.app/recherche?titre=${query}`;
 
@@ -21,14 +21,14 @@ module.exports = async (senderId, prompt) => {
 
         // Vérifier si des vidéos sont retournées
         if (videos && videos.length > 0) {
-            // Prendre la première vidéo de la liste
+            // Prendre la première vidéo pour l'envoi
             const video = videos[0];
             const videoUrl = video.url;
 
-            // Envoyer un message d'attente pour le téléchargement
+            // Envoyer un message de téléchargement de la vidéo
             await sendMessage(senderId, "Téléchargement de la vidéo en cours...");
 
-            // Envoi de la vidéo en pièce jointe
+            // Envoyer la vidéo en pièce jointe
             await sendMessage(senderId, {
                 attachment: {
                     type: 'video', // Spécifier que c'est une vidéo
@@ -56,6 +56,6 @@ module.exports = async (senderId, prompt) => {
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "video",  // Le nom de la commande
-    description: "Recherche et envoie une vidéo basée sur le texte saisi.",  // Description de la commande
-    usage: "Envoyez 'video <recherche>' pour rechercher une vidéo."  // Comment utiliser la commande
+    description: "Recherche et envoie des vidéos basées sur le texte saisi.",  // Description de la commande
+    usage: "Envoyez 'video <recherche>' pour rechercher des vidéos."  // Comment utiliser la commande
 };
