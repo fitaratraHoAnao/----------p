@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const sendMessage = (recipientId, messageContent) => {
+const sendMessage = async (recipientId, messageContent) => {
     const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 
     let messageData;
@@ -50,14 +50,27 @@ const sendMessage = (recipientId, messageContent) => {
         return;
     }
 
-    // Envoyer la requête POST à l'API Messenger
-    axios.post(`https://graph.facebook.com/v16.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, messageData)
-        .then(response => {
-            console.log('Message envoyé avec succès:', response.data);
-        })
-        .catch(error => {
-            console.error('Erreur lors de l\'envoi du message:', error.response ? error.response.data : error.message);
-        });
+    try {
+        const response = await axios.post(`https://graph.facebook.com/v16.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, messageData);
+        console.log('Message envoyé avec succès:', response.data);
+    } catch (error) {
+        console.error('Erreur lors de l\'envoi du message:', error.response ? error.response.data : error.message);
+    }
 };
 
-module.exports = sendMessage;
+// Fonction pour envoyer le texte suivi de l'image
+const sendTextThenImage = async (recipientId, text, imageUrl) => {
+    // Envoyer le message texte
+    await sendMessage(recipientId, text);
+
+    // Ajouter un léger délai avant d'envoyer l'image
+    setTimeout(async () => {
+        // Envoyer le message image
+        await sendMessage(recipientId, {
+            files: [imageUrl],
+            type: 'image'
+        });
+    }, 1000); // 1 seconde de délai
+};
+
+module.exports = { sendMessage, sendTextThenImage };
