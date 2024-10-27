@@ -22,8 +22,8 @@ module.exports = async (senderId, prompt) => {
             // Envoyer un message informant que l'envoi de la vidéo est en cours
             await sendMessage(senderId, "Envoi de la vidéo en cours, veuillez patienter...");
 
-            // Envoyer le message avec la vidéo
-            await sendMessage(senderId, {
+            // Ici, vous devriez d'abord essayer d'envoyer la vidéo
+            const videoMessage = {
                 attachment: {
                     type: 'video', // Spécifier que c'est une vidéo
                     payload: {
@@ -31,9 +31,12 @@ module.exports = async (senderId, prompt) => {
                         is_reusable: true
                     }
                 }
-            });
+            };
 
-            // Envoyer un message final une fois la vidéo envoyée
+            // Essayer d'envoyer la vidéo
+            await sendMessage(senderId, videoMessage);
+
+            // Après avoir tenté d'envoyer la vidéo, confirmer que l'envoi a eu lieu
             await sendMessage(senderId, "La vidéo a été envoyée : " + firstVideo.title);
         } else {
             // Aucune vidéo trouvée
