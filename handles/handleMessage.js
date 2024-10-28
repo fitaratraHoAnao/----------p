@@ -57,36 +57,60 @@ const handleMessage = async (event, api) => {
                 const imageUrl = image.payload.url;
 
                 try {
-                    if (!imageHistory[senderId]) {
-                        imageHistory[senderId] = [];
-                    }
-                    imageHistory[senderId].push(imageUrl);
-
-                    const ocrResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
-                        link: imageUrl,
-                        prompt: "Analyse du texte de l'image pour détection de mots-clés",
-                        customId: senderId
-                    });
-
-                    const ocrText = ocrResponse.data.message || "";
-                    const hasExerciseKeywords = detectExerciseKeywords(ocrText);
-
-                    const prompt = hasExerciseKeywords
-                        ? "Faire cet exercice et donner la correction complète de cet exercice"
-                        : "Décrire cette photo";
-
-                    const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
-                        link: imageUrl,
-                        prompt,
-                        customId: senderId
-                    });
-
-                    const reply = response.data.message;
-                    
-                    if (reply) {
-                        await sendLongMessage(senderId, `Bruno : voici ma suggestion de réponse pour cette image :\n${reply}`);
+                    if (activeCommands[senderId] === 'removebg') {
+                        // Traiter avec l'API remove-bg
+                        const removeBgApiUrl = `https://remove-bg-ten.vercel.app/api/remove?url=${encodeURIComponent(imageUrl)}`;
+                        const response = await axios.get(removeBgApiUrl, { responseType: 'arraybuffer' });
+                        
+                        if (response.status === 200) {
+                            const imageBuffer = Buffer.from(response.data, 'binary');
+                            await sendMessage(senderId, {
+                                attachment: {
+                                    type: 'image',
+                                    payload: {
+                                        url: `data:image/png;base64,${imageBuffer.toString('base64')}`,
+                                        is_reusable: true
+                                    }
+                                }
+                            });
+                        } else {
+                            await sendMessage(senderId, "Erreur : Impossible de supprimer l'arrière-plan de cette image.");
+                        }
+                        // Réinitialiser la commande active pour éviter un traitement répété
+                        activeCommands[senderId] = null;
                     } else {
-                        await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour l'image.");
+                        // Traiter avec l'API Gemini
+                        if (!imageHistory[senderId]) {
+                            imageHistory[senderId] = [];
+                        }
+                        imageHistory[senderId].push(imageUrl);
+
+                        const ocrResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
+                            link: imageUrl,
+                            prompt: "Analyse du texte de l'image pour détection de mots-clés",
+                            customId: senderId
+                        });
+
+                        const ocrText = ocrResponse.data.message || "";
+                        const hasExerciseKeywords = detectExerciseKeywords(ocrText);
+
+                        const prompt = hasExerciseKeywords
+                            ? "Faire cet exercice et donner la correction complète de cet exercice"
+                            : "Décrire cette photo";
+
+                        const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
+                            link: imageUrl,
+                            prompt,
+                            customId: senderId
+                        });
+
+                        const reply = response.data.message;
+                        
+                        if (reply) {
+                            await sendLongMessage(senderId, `Bruno : voici ma suggestion de réponse pour cette image :\n${reply}`);
+                        } else {
+                            await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour l'image.");
+                        }
                     }
                 } catch (error) {
                     console.error('Erreur lors de l\'analyse de l\'image :', error.response ? error.response.data : error.message);
