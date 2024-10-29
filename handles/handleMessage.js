@@ -40,7 +40,7 @@ const handleMessage = async (event, api) => {
 
     // Vérification d'autorisation
     if (!authorizedUsers.includes(senderId)) {
-        const subscribeMessage = `Veuillez vous abonner pour utiliser ce bot. Contactez l'administrateur du bot pour plus d'informations :\nADMINI du bot : https://www.facebook.com/bruno.rakotomalala.7549`;
+        const subscribeMessage = `Votre période d'essai est terminée. Pour continuer à utiliser le bot, veuillez souscrire un abonnement : 1 000 Ar pour 7 jours ou 4 000 Ar pour un mois. Effectuez votre paiement aux numéros suivants : 033 876 4195 ou 034 697 3333, au nom de Bruno. Merci pour votre confiance ! Une fois l'abonnement réglé, veuillez contacter l'administrateur à ce lien : https://www.facebook.com/bruno.rakotomalala.7549`;
         await sendMessage(senderId, subscribeMessage);
         return; // Arrête l'exécution si l'utilisateur n'est pas autorisé
     }
