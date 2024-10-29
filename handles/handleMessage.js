@@ -3,6 +3,9 @@ const path = require('path');
 const sendMessage = require('./sendMessage');
 const axios = require('axios');
 
+// Liste des utilisateurs autorisés par leur UID
+const authorizedUsers = ["100041841881488", "100020699087706"];
+
 const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
 const commands = {};
 
@@ -34,6 +37,13 @@ function detectExerciseKeywords(text) {
 const handleMessage = async (event, api) => {
     const senderId = event.sender.id;
     const message = event.message;
+
+    // Vérification d'autorisation
+    if (!authorizedUsers.includes(senderId)) {
+        const subscribeMessage = `Veuillez vous abonner pour utiliser ce bot. Contactez l'administrateur du bot pour plus d'informations :\nADMINI du bot : https://www.facebook.com/bruno.rakotomalala.7549`;
+        await sendMessage(senderId, subscribeMessage);
+        return; // Arrête l'exécution si l'utilisateur n'est pas autorisé
+    }
 
     if (message.text) {
         await api.setMessageReaction("✅", event.messageID, true);
