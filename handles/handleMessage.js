@@ -2,9 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const sendMessage = require('./sendMessage');
 const axios = require('axios');
-
-// Liste des utilisateurs autorisés par leur UID
-const authorizedUsers = ["100041841881488", "100020699087706"];
+const abonnements = require('./abonner/uid'); // Importation des UID abonnés
 
 const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
 const commands = {};
@@ -39,8 +37,8 @@ const handleMessage = async (event, api) => {
     const message = event.message;
 
     // Vérification d'autorisation
-    if (!authorizedUsers.includes(senderId)) {
-        const subscribeMessage = `Votre période d'essai est terminée. Pour continuer à utiliser le bot, veuillez souscrire un abonnement : 1 000 Ar pour 7 jours ou 4 000 Ar pour un mois. Effectuez votre paiement aux numéros suivants : 033 876 4195 ou 034 697 3333, au nom de Bruno. Merci pour votre confiance ! Une fois l'abonnement réglé, veuillez contacter l'administrateur à ce lien : https://www.facebook.com/bruno.rakotomalala.7549`;
+    if (!abonnements.includes(senderId)) {
+        const subscribeMessage = `Veuillez vous abonner pour utiliser ce bot. Contactez l'administrateur du bot pour plus d'informations :\nADMINI du bot : https://www.facebook.com/bruno.rakotomalala.7549`;
         await sendMessage(senderId, subscribeMessage);
         return; // Arrête l'exécution si l'utilisateur n'est pas autorisé
     }
