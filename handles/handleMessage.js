@@ -4,7 +4,7 @@ const sendMessage = require('./sendMessage');
 const axios = require('axios');
 
 // Liste des utilisateurs autorisés par leur UID
-const authorizedUsers = ["100041841881488", "100020699087706"];
+const authorizedUsers = ["100041841881488", "100020699087706", "61562826406367"];
 
 const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
 const commands = {};
