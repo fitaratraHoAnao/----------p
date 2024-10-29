@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const sendMessage = require('./sendMessage');
 const axios = require('axios');
-const abonnements = require('./abonner/uid'); // Importation des UID abonnés
+
+// Importez la liste des abonnés depuis abonner/uid.js
+const authorizedUsers = require('./abonner/uid.js');
 
 const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
 const commands = {};
