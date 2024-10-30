@@ -1,6 +1,6 @@
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
-const sendMessage = require('./sendMessage');
+const sendMessage = require('./sendMessage'); // Assurez-vous que ce fichier existe
 const axios = require('axios');
 
 const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
@@ -15,7 +15,6 @@ console.log('Les commandes suivantes ont été chargées :', Object.keys(command
 
 const activeCommands = {};
 const imageHistory = {};
-
 const MAX_MESSAGE_LENGTH = 2000; // Limite de caractères pour chaque message envoyé
 
 async function sendLongMessage(senderId, message) {
@@ -35,12 +34,8 @@ const handleMessage = async (event, api) => {
     const senderId = event.sender.id;
     const message = event.message;
 
-    if (message.text && event.messageID) {
-        try {
-            await api.setMessageReaction("✅", event.messageID, true);
-        } catch (error) {
-            console.error("Erreur lors de l'ajout de la réaction :", error.response ? error.response.data : error.message);
-        }
+    if (message.text) {
+        await api.setMessageReaction("✅", event.messageID, true);
     }
 
     const typingMessage = "🇲🇬 *Bruno* rédige sa réponse... un instant, s'il vous plaît 🍟";
@@ -142,3 +137,4 @@ const handleMessage = async (event, api) => {
 };
 
 module.exports = handleMessage;
+    
