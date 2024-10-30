@@ -35,8 +35,12 @@ const handleMessage = async (event, api) => {
     const senderId = event.sender.id;
     const message = event.message;
 
-    if (message.text) {
-        await api.setMessageReaction("✅", event.messageID, true);
+    if (message.text && event.messageID) {
+        try {
+            await api.setMessageReaction("✅", event.messageID, true);
+        } catch (error) {
+            console.error("Erreur lors de l'ajout de la réaction :", error.response ? error.response.data : error.message);
+        }
     }
 
     const typingMessage = "🇲🇬 *Bruno* rédige sa réponse... un instant, s'il vous plaît 🍟";
