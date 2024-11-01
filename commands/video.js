@@ -3,48 +3,36 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, prompt) => {
     try {
-        // Envoyer un message de confirmation de la recherche en cours
-        await sendMessage(senderId, "Recherche de vidéos en cours...");
+        // Envoyer un message de confirmation que le message a été reçu
+        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Effectuer la recherche avec l'API YouTube
-        const query = encodeURIComponent(prompt);
-        const apiUrl = `https://youtube-api-milay.vercel.app/recherche?titre=${query}`;
-        const response = await axios.get(apiUrl);
+        // URL d'une vidéo accessible (exemple vidéo MP4 publique)
+        const videoUrl = "https://www.w3schools.com/html/mov_bbb.mp4";
 
-        // Récupérer les vidéos de la réponse de l'API
-        const videos = response.data.videos;
-        console.log("Vidéos trouvées :", videos);
-
-        if (videos && videos.length > 0) {
-            // Sélectionner la première vidéo trouvée
-            const video = videos[0];
-            const videoUrl = video.url;
-
-            // Envoyer la vidéo à l'utilisateur
-            await sendMessage(senderId, {
-                attachment: {
-                    type: 'video',
-                    payload: {
-                        url: videoUrl,
-                        is_reusable: true
-                    }
+        // Envoyer un message avec la vidéo
+        await sendMessage(senderId, {
+            attachment: {
+                type: 'video',
+                payload: {
+                    url: videoUrl,
+                    is_reusable: true
                 }
-            });
+            }
+        });
 
-            // Message de confirmation
-            await sendMessage(senderId, "Voici la vidéo que vous avez demandée !");
-        } else {
-            // Aucune vidéo trouvée
-            await sendMessage(senderId, "Aucune vidéo trouvée pour votre recherche.");
-        }
+        // Envoyer un message final une fois la vidéo envoyée
+        await sendMessage(senderId, "Voici la vidéo que vous avez demandée.");
     } catch (error) {
-        console.error("Erreur lors de la récupération des vidéos:", error);
+        console.error("Erreur lors de l'envoi de la vidéo :", error);
+
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre demande.");
     }
 };
 
+// Ajouter les informations de la commande
 module.exports.info = {
-    name: "video",
-    description: "Recherche et envoie des vidéos basées sur le texte saisi.",
-    usage: "Envoyez 'video <recherche>' pour rechercher des vidéos."
+    name: "video",  // Le nom de la commande
+    description: "Envoie un fichier vidéo à l'utilisateur.",  // Description de la commande
+    usage: "Envoyez 'video' pour recevoir un fichier vidéo."  // Comment utiliser la commande
 };
