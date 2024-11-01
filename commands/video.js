@@ -6,28 +6,21 @@ module.exports = async (senderId, prompt) => {
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // API pour rechercher les vidéos par artiste ou titre
-        const searchApiUrl = "https://youtube-api-rest-test.vercel.app/recherche?titre=westlife";
-        const videoDetailsApiUrl = "https://youtube-api-rest-test.vercel.app/recherche/video?titre=my%20love&chanteur=westlife";
+        // Extraire le titre et le chanteur de la requête utilisateur
+        const query = prompt.replace("video", "").trim();
 
-        // Appeler l'API pour rechercher les vidéos de Westlife
-        const searchResponse = await axios.get(searchApiUrl);
-        const searchResults = searchResponse.data;
+        // Appeler la 2ème API pour obtenir l'URL de la vidéo YouTube
+        const videoApiUrl = `https://youtube-api-rest-test.vercel.app/recherche/video?titre=${encodeURIComponent(query)}`;
+        const videoResponse = await axios.get(videoApiUrl);
+        const videoData = videoResponse.data;
 
-        // Filtrer le résultat pour trouver la vidéo désirée
-        const videoData = searchResults.find(video => video.titre.includes("My Love"));
-
-        // Si la vidéo est trouvée, appeler l'API pour obtenir l'URL de la vidéo
-        if (videoData) {
-            const videoResponse = await axios.get(videoDetailsApiUrl);
-            const videoUrl = videoResponse.data.url;
-
-            // Envoyer le lien de la vidéo
+        if (videoData && videoData.url) {
+            // Envoyer la vidéo en tant que pièce jointe
             await sendMessage(senderId, {
                 attachment: {
                     type: 'video',
                     payload: {
-                        url: videoUrl,
+                        url: videoData.url,
                         is_reusable: true
                     }
                 }
@@ -40,8 +33,6 @@ module.exports = async (senderId, prompt) => {
         }
     } catch (error) {
         console.error("Erreur lors de l'envoi de la vidéo :", error);
-
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre demande.");
     }
 };
@@ -50,5 +41,5 @@ module.exports = async (senderId, prompt) => {
 module.exports.info = {
     name: "video",  // Le nom de la commande
     description: "Envoie un fichier vidéo à l'utilisateur.",  // Description de la commande
-    usage: "Envoyez 'video' pour recevoir un fichier vidéo."  // Comment utiliser la commande
+    usage: "Envoyez 'video <titre>' pour recevoir une vidéo spécifique."  // Comment utiliser la commande
 };
