@@ -6,12 +6,12 @@ module.exports = async (senderId, prompt) => {
     try {
         let year;
 
-        // Vérifier si l'utilisateur a spécifié une année ou si on doit utiliser la dernière année demandée
+        // Vérifier si l'utilisateur a spécifié une année ou utiliser la dernière année demandée
         const words = prompt.trim().split(' ');
         if (words.length > 1) {
-            year = words[1]; // Si une année est spécifiée
+            year = words[1];
         } else {
-            year = userSessions[senderId] || new Date().getFullYear(); // Utiliser l'année précédente ou l'année en cours par défaut
+            year = userSessions[senderId] || new Date().getFullYear();
         }
 
         // Mettre à jour la session utilisateur avec la nouvelle année
@@ -42,7 +42,7 @@ module.exports = async (senderId, prompt) => {
             "NOVEMBRE": [],
             "DECEMBRE": []
         };
-        
+
         // Répartition des jours dans les mois
         jours.forEach(jour => {
             const dayNumber = parseInt(jour.nombre, 10);
@@ -60,7 +60,7 @@ module.exports = async (senderId, prompt) => {
             else mois["DECEMBRE"].push(jour);
         });
 
-        // Fonction pour envoyer chaque mois avec une pause d'1 seconde entre chaque envoi
+        // Envoyer chaque mois sans délai entre chaque message
         for (const [nomMois, joursDuMois] of Object.entries(mois)) {
             if (joursDuMois.length > 0) {
                 let message = `👉 ${nomMois.toUpperCase()} :\n`;
@@ -73,9 +73,6 @@ module.exports = async (senderId, prompt) => {
 
                 // Envoyer le message pour le mois courant
                 await sendMessage(senderId, message);
-
-                // Attendre 1 seconde avant d'envoyer le mois suivant
-                await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
 
