@@ -1,7 +1,6 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
+const sendMessage = require('../handles/sendMessage');
 
-// Fonction pour découper un message en plusieurs morceaux
 function splitMessageIntoChunks(message, maxLength = 2000) {
     const chunks = [];
     let start = 0;
@@ -14,13 +13,12 @@ function splitMessageIntoChunks(message, maxLength = 2000) {
     return chunks;
 }
 
-const userSessions = {}; // Stocker les sessions utilisateurs
+const userSessions = {};
 
 module.exports = async (senderId, prompt) => {
     try {
         let year;
 
-        // Vérifier si l'utilisateur a spécifié une année ou utiliser la dernière année demandée
         const words = prompt.trim().split(' ');
         if (words.length > 1) {
             year = words[1];
@@ -28,20 +26,14 @@ module.exports = async (senderId, prompt) => {
             year = userSessions[senderId] || new Date().getFullYear();
         }
 
-        // Mettre à jour la session utilisateur avec la nouvelle année
         userSessions[senderId] = year;
-
-        // Message de confirmation
         await sendMessage(senderId, `Message reçu, je prépare le calendrier pour ${year}...`);
 
-        // Appeler l'API calendrier
         const apiUrl = `https://calendrier-api.vercel.app/recherche?calendrier=${year}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer la bonne clé dans la réponse de l'API
         const jours = response.data[`calendrier_${year}`][0].jours;
 
-        // Créer un tableau pour chaque mois avec les jours correspondants
         const mois = {
             "JANVIER": [],
             "FEVRIER": [],
@@ -57,24 +49,23 @@ module.exports = async (senderId, prompt) => {
             "DECEMBRE": []
         };
 
-        // Répartition des jours dans les mois
+        // Distribution des jours dans les mois
         jours.forEach(jour => {
             const dayNumber = parseInt(jour.nombre, 10);
-            if (dayNumber <= 31) mois["JANVIER"].push(jour);
-            else if (dayNumber <= 59) mois["FEVRIER"].push(jour);
-            else if (dayNumber <= 90) mois["MARS"].push(jour);
-            else if (dayNumber <= 120) mois["AVRIL"].push(jour);
-            else if (dayNumber <= 151) mois["MAI"].push(jour);
-            else if (dayNumber <= 181) mois["JUIN"].push(jour);
-            else if (dayNumber <= 212) mois["JUILLET"].push(jour);
-            else if (dayNumber <= 243) mois["AOUT"].push(jour);
-            else if (dayNumber <= 273) mois["SEPTEMBRE"].push(jour);
-            else if (dayNumber <= 304) mois["OCTOBRE"].push(jour);
-            else if (dayNumber <= 334) mois["NOVEMBRE"].push(jour);
-            else mois["DECEMBRE"].push(jour);
+            if (dayNumber >= 1 && dayNumber <= 31) mois["JANVIER"].push(jour);
+            if (dayNumber >= 32 && dayNumber <= 59) mois["FEVRIER"].push(jour);
+            if (dayNumber >= 60 && dayNumber <= 90) mois["MARS"].push(jour);
+            if (dayNumber >= 91 && dayNumber <= 120) mois["AVRIL"].push(jour);
+            if (dayNumber >= 121 && dayNumber <= 151) mois["MAI"].push(jour);
+            if (dayNumber >= 152 && dayNumber <= 181) mois["JUIN"].push(jour);
+            if (dayNumber >= 182 && dayNumber <= 212) mois["JUILLET"].push(jour);
+            if (dayNumber >= 213 && dayNumber <= 243) mois["AOUT"].push(jour);
+            if (dayNumber >= 244 && dayNumber <= 273) mois["SEPTEMBRE"].push(jour);
+            if (dayNumber >= 274 && dayNumber <= 304) mois["OCTOBRE"].push(jour);
+            if (dayNumber >= 305 && dayNumber <= 334) mois["NOVEMBRE"].push(jour);
+            if (dayNumber >= 335 && dayNumber <= 365) mois["DECEMBRE"].push(jour);
         });
 
-        // Envoyer chaque mois successivement avec un délai
         for (const [nomMois, joursDuMois] of Object.entries(mois)) {
             if (joursDuMois.length > 0) {
                 let message = `👉 ${nomMois.toUpperCase()} :\n`;
@@ -85,28 +76,24 @@ module.exports = async (senderId, prompt) => {
                     message += '\n';
                 });
 
-                // Découper le message en morceaux si nécessaire
                 const messageChunks = splitMessageIntoChunks(message);
 
-                // Envoyer les morceaux successivement avec un délai
                 for (const chunk of messageChunks) {
                     await sendMessage(senderId, chunk);
-                    await new Promise(resolve => setTimeout(resolve, 1500)); // Délai de 1.5 seconde entre chaque envoi
+                    await new Promise(resolve => setTimeout(resolve, 1500));
                 }
             }
         }
 
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API calendrier:', error);
-
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre demande.");
     }
 };
 
-// Ajouter les informations de la commande
+// Informations de la commande
 module.exports.info = {
-    name: "calendrier", // Le nom de la commande
-    description: "Affiche le calendrier pour l'année spécifiée ou la dernière année demandée.", // Description de la commande
-    usage: "Envoyez 'calendrier <année>' pour obtenir le calendrier de cette année ou simplement 'calendrier' pour la dernière année demandée." // Comment utiliser la commande
+    name: "calendrier",
+    description: "Affiche le calendrier pour l'année spécifiée ou la dernière année demandée.",
+    usage: "Envoyez 'calendrier <année>' pour obtenir le calendrier de cette année ou simplement 'calendrier' pour la dernière année demandée."
 };
