@@ -137,4 +137,3 @@ const handleMessage = async (event, api) => {
 };
 
 module.exports = handleMessage;
-    
