@@ -56,12 +56,21 @@ async function sendNextMonth(senderId) {
 
     // Obtenir les données du mois actuel
     const mois = calendrierData[currentMonthIndex];
+    const moisNom = mois.mois; // Assurez-vous d'accéder correctement à la clé "mois"
+    
+    // Vérifiez que le nom du mois existe avant d'afficher
+    if (!moisNom) {
+        await sendMessage(senderId, "Erreur : le nom du mois est introuvable.");
+        delete userSessions[senderId];
+        return;
+    }
+
     const formattedMonth = mois.jours.map(jour => 
         `Jour : ${jour.nombre} - ${jour.description} (${jour.lettre})${jour.info ? ' - Info : ' + jour.info : ''}`
     ).join('\n');
 
-    // Envoyer le mois formaté
-    await sendMessage(senderId, `--- Mois : ${mois.nom} ---\n${formattedMonth}`);
+    // Envoyer le mois formaté avec le nom du mois
+    await sendMessage(senderId, `--- Mois : ${moisNom} ---\n${formattedMonth}`);
 
     // Mettre à jour l'index pour le prochain mois
     session.currentMonthIndex++;
