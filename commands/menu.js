@@ -9,7 +9,7 @@ module.exports = async (senderId, prompt) => {
 
     try {
         // Lire les fichiers dans le répertoire "commands"
-        const commandFiles = fs.readdirSync(__dirname).filter(file => file.endsWith('.js'));
+        const commandFiles = fs.readdirSync(path.join(__dirname)).filter(file => file.endsWith('.js'));
 
         if (commandName) {
             // Chercher une commande spécifique
@@ -83,7 +83,6 @@ ${formattedMenu}
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "menu",  // Le nom de la commande
-    description: "Affiche un menu avec toutes les commandes disponibles ou les détails d'une commande spécifique.",  // Description de la commande
-    usage: "Envoyez 'menu' pour voir toutes les commandes ou 'menu <nom de la commande>' pour plus de détails."  // Comment utiliser la commande
+    description: "Affiche un menu avec toutes les commandes disponibles.", // Description de la commande
+    usage: "menu [numéro|nom]", // Exemple d'utilisation
 };
-    
