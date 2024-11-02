@@ -66,7 +66,7 @@ module.exports = async (senderId, prompt) => {
                 let message = `👉 ${nomMois.toUpperCase()} :\n`;
                 
                 joursDuMois.forEach(jour => {
-                    message += `\t${jour.lettre}\t${jour.nombre}\t${jour.description}`;
+                    message += `\t${jour.lettre}\t✅${jour.nombre}\t✅${jour.description}`;
                     if (jour.info) message += `\t${jour.info}`;
                     message += '\n';
                 });
