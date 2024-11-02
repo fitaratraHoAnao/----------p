@@ -1,47 +1,75 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
+// Garder une trace de l'état d'avancement de chaque utilisateur
+const userSessions = {};
+
 module.exports = async (senderId, prompt) => {
     try {
-        // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Message reçu, je prépare le calendrier pour l'année spécifiée...");
+        // Si l'utilisateur demande un calendrier pour une année spécifique
+        if (prompt.startsWith("calendrier")) {
+            const year = prompt.split(" ")[1].trim();
+            const apiUrl = `https://calendrier-api.vercel.app/recherche?calendrier=${year}`;
+            const response = await axios.get(apiUrl);
 
-        // Appeler l'API du calendrier avec l'année demandée par l'utilisateur
-        const year = prompt.trim();
-        const apiUrl = `https://calendrier-api.vercel.app/recherche?calendrier=${year}`;
-        const response = await axios.get(apiUrl);
-
-        // Récupérer les données du calendrier, organisées par mois
-        const calendrierData = response.data[`calendrier_${year}`];
-
-        // Parcourir chaque mois et formater les données
-        for (const mois of calendrierData) {
-            const formattedMonth = mois.jours.map(jour => 
-                `Jour : ${jour.nombre} - ${jour.description} (${jour.lettre})${jour.info ? ' - Info : ' + jour.info : ''}`
-            ).join('\n');
-
-            // Découper le mois en morceaux de 2000 caractères si nécessaire
-            const chunks = formattedMonth.match(/.{1,2000}/g);
-
-            // Envoyer chaque morceau pour le mois actuel
-            await sendMessage(senderId, `--- Mois : ${mois.nom} ---`);
-            for (const chunk of chunks) {
-                await sendMessage(senderId, chunk);
-                // Pause de 2 secondes entre chaque envoi pour éviter les limites de taux
-                await new Promise(resolve => setTimeout(resolve, 2000));
+            const calendrierData = response.data[`calendrier_${year}`];
+            if (!calendrierData) {
+                await sendMessage(senderId, "Désolé, aucune donnée trouvée pour cette année.");
+                return;
             }
+
+            // Enregistrer les données de l'utilisateur pour les réponses successives
+            userSessions[senderId] = {
+                calendrierData,
+                currentMonthIndex: 0
+            };
+
+            // Envoyer le premier mois
+            await sendNextMonth(senderId);
+        } else if (prompt.toLowerCase() === "suivant") {
+            // Envoyer le mois suivant si "suivant" est envoyé
+            await sendNextMonth(senderId);
+        } else {
+            await sendMessage(senderId, "Pour afficher le calendrier, envoyez 'calendrier <année>'. Pour passer au mois suivant, envoyez 'suivant'.");
         }
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API du calendrier:', error);
-
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
     }
 };
 
+async function sendNextMonth(senderId) {
+    const session = userSessions[senderId];
+    if (!session) {
+        await sendMessage(senderId, "Commencez par demander une année, ex: 'calendrier 2024'.");
+        return;
+    }
+
+    const { calendrierData, currentMonthIndex } = session;
+
+    // Si tous les mois ont été envoyés, informer l'utilisateur
+    if (currentMonthIndex >= calendrierData.length) {
+        await sendMessage(senderId, "Vous avez reçu tous les mois de l'année.");
+        delete userSessions[senderId];
+        return;
+    }
+
+    // Obtenir les données du mois actuel
+    const mois = calendrierData[currentMonthIndex];
+    const formattedMonth = mois.jours.map(jour => 
+        `Jour : ${jour.nombre} - ${jour.description} (${jour.lettre})${jour.info ? ' - Info : ' + jour.info : ''}`
+    ).join('\n');
+
+    // Envoyer le mois formaté
+    await sendMessage(senderId, `--- Mois : ${mois.nom} ---\n${formattedMonth}`);
+
+    // Mettre à jour l'index pour le prochain mois
+    session.currentMonthIndex++;
+}
+
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "calendrier",  // Nouveau nom de la commande
-    description: "Affiche les jours et événements du calendrier pour une année spécifiée.",  // Nouvelle description
-    usage: "Envoyez 'calendrier <année>' pour voir les jours et événements de cette année."  // Nouveau mode d'emploi
+    name: "calendrier",
+    description: "Affiche le calendrier pour une année spécifiée mois par mois. Envoyez 'suivant' pour passer au mois suivant.",
+    usage: "Envoyez 'calendrier <année>' pour démarrer, puis 'suivant' pour voir les mois successifs."
 };
