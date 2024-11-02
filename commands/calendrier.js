@@ -11,22 +11,25 @@ module.exports = async (senderId, prompt) => {
         const apiUrl = `https://calendrier-api.vercel.app/recherche?calendrier=${year}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer les données du calendrier
-        const calendrierData = response.data.calendrier_2024[0].jours;
+        // Récupérer les données du calendrier, organisées par mois
+        const calendrierData = response.data[`calendrier_${year}`];
 
-        // Transformer les données en une chaîne de caractères formatée
-        const formattedResponse = calendrierData.map(jour => 
-            `Jour : ${jour.nombre} - ${jour.description} (${jour.lettre})${jour.info ? ' - Info : ' + jour.info : ''}`
-        ).join('\n');
+        // Parcourir chaque mois et formater les données
+        for (const mois of calendrierData) {
+            const formattedMonth = mois.jours.map(jour => 
+                `Jour : ${jour.nombre} - ${jour.description} (${jour.lettre})${jour.info ? ' - Info : ' + jour.info : ''}`
+            ).join('\n');
 
-        // Découper la réponse en morceaux de 2000 caractères
-        const chunks = formattedResponse.match(/.{1,2000}/g);
+            // Découper le mois en morceaux de 2000 caractères si nécessaire
+            const chunks = formattedMonth.match(/.{1,2000}/g);
 
-        // Envoyer les morceaux de réponse successivement
-        for (const chunk of chunks) {
-            await sendMessage(senderId, chunk);
-            // Pause de 2 secondes entre chaque envoi pour éviter les limites de taux
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Envoyer chaque morceau pour le mois actuel
+            await sendMessage(senderId, `--- Mois : ${mois.nom} ---`);
+            for (const chunk of chunks) {
+                await sendMessage(senderId, chunk);
+                // Pause de 2 secondes entre chaque envoi pour éviter les limites de taux
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
         }
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API du calendrier:', error);
