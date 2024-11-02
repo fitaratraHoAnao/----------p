@@ -1,5 +1,19 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage');
+const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
+
+// Fonction pour découper un message en plusieurs morceaux
+function splitMessageIntoChunks(message, maxLength = 2000) {
+    const chunks = [];
+    let start = 0;
+
+    while (start < message.length) {
+        chunks.push(message.slice(start, start + maxLength));
+        start += maxLength;
+    }
+
+    return chunks;
+}
+
 const userSessions = {}; // Stocker les sessions utilisateurs
 
 module.exports = async (senderId, prompt) => {
@@ -60,19 +74,25 @@ module.exports = async (senderId, prompt) => {
             else mois["DECEMBRE"].push(jour);
         });
 
-        // Envoyer chaque mois sans délai entre chaque message
+        // Envoyer chaque mois successivement avec un délai
         for (const [nomMois, joursDuMois] of Object.entries(mois)) {
             if (joursDuMois.length > 0) {
                 let message = `👉 ${nomMois.toUpperCase()} :\n`;
                 
                 joursDuMois.forEach(jour => {
-                    message += `\t${jour.lettre}\t✅${jour.nombre}\t✅${jour.description}`;
+                    message += `\t✅${jour.nombre}\t✅${jour.description}`;
                     if (jour.info) message += `\t${jour.info}`;
                     message += '\n';
                 });
 
-                // Envoyer le message pour le mois courant
-                await sendMessage(senderId, message);
+                // Découper le message en morceaux si nécessaire
+                const messageChunks = splitMessageIntoChunks(message);
+
+                // Envoyer les morceaux successivement avec un délai
+                for (const chunk of messageChunks) {
+                    await sendMessage(senderId, chunk);
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // Délai de 1.5 seconde entre chaque envoi
+                }
             }
         }
 
