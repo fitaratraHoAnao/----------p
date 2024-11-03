@@ -67,7 +67,7 @@ module.exports = async (senderId, year) => {
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "calendrier2",
+    name: "calendrier",
     description: "Affiche le calendrier mois par mois pour une année spécifique.",
-    usage: "Envoyez 'calendrier2 <année>' pour afficher le calendrier de cette année."
+    usage: "Envoyez 'calendrier <année>' pour afficher le calendrier de cette année."
 };
