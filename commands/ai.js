@@ -2,7 +2,7 @@ const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 // Déclaration de l'URL de base de votre API
-const BASE_API_URL = 'https://cohere-nouveau.onrender.com/chat';
+const BASE_API_URL = 'https://api.kenliejugarap.com/ministral-3b-paid';
 
 module.exports = async (senderId, userText) => {
     // Extraire le prompt en retirant le préfixe 'ai' et en supprimant les espaces superflus
@@ -19,7 +19,7 @@ module.exports = async (senderId, userText) => {
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
         // Appeler l'API avec le prompt fourni et l'ID utilisateur
-        const apiUrl = `${BASE_API_URL}?message=${encodeURIComponent(prompt)}&userId=${senderId}`;
+        const apiUrl = `${BASE_API_URL}?question=${encodeURIComponent(prompt)}&userId=${senderId}`;
         const response = await axios.get(apiUrl);
 
         // Récupérer la réponse de l'API
