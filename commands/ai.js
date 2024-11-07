@@ -2,7 +2,7 @@ const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 // Déclaration de l'URL de base de votre API
-const BASE_API_URL = 'https://api.kenliejugarap.com/ministral-3b-paid';
+const BASE_API_URL = 'https://api.kenliejugarap.com/ministral-3b-paid/';
 
 module.exports = async (senderId, userText) => {
     // Extraire le prompt en retirant le préfixe 'ai' et en supprimant les espaces superflus
