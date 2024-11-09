@@ -1,66 +1,37 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Fonction pour découper un texte en morceaux de 500 caractères
-function splitText(text, maxLength) {
-    const parts = [];
-    let startIndex = 0;
-    while (startIndex < text.length) {
-        const endIndex = Math.min(startIndex + maxLength, text.length);
-        parts.push(text.slice(startIndex, endIndex));
-        startIndex = endIndex;
-    }
-    return parts;
-}
-
-// Fonction pour traduire un texte avec l'API MyMemory
-async function translateText(text) {
-    const translationApiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|fr`;
-    const response = await axios.get(translationApiUrl);
-    return response.data.responseData.translatedText;
-}
-
-module.exports = async (senderId, searchQuery) => {
+module.exports = async (senderId, definition) => {
     try {
-        // Envoyer un message de confirmation que la recherche a commencé
-        await sendMessage(senderId, `Recherche de "${searchQuery}" sur la définition...`);
+        // Confirmer la réception du message de l'utilisateur
+        await sendMessage(senderId, "Message reçu, je prépare la définition...");
 
-        // Appeler l'API de définition avec la requête de l'utilisateur
-        const apiUrl = `https://definition-miriam.vercel.app/definition/${encodeURIComponent(searchQuery)}`;
+        // Appeler l'API de définition avec le mot donné par l'utilisateur
+        const apiUrl = `https://definition-delta.vercel.app/recherche?definition=${encodeURIComponent(definition)}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer les données pertinentes de la réponse de l'API
-        const { definitions, word } = response.data;
+        // Récupérer la réponse complète de l'API
+        const reply = response.data.sections.map(section => 
+            `${section.titre} ${section.emploi}\n${section.definition}\n${section.exemples.join('\n')}`
+        ).join('\n\n');
 
-        // Découper les définitions en morceaux de 500 caractères maximum
-        const parts = definitions.map(def => splitText(def, 500)).flat();
+        // Découper la réponse en morceaux de taille adaptée (environ 10 morceaux)
+        const morceaux = reply.match(/[\s\S]{1,2000}/g); // Chaque morceau aura une taille de ~2000 caractères
 
-        // Traduire chaque morceau en français
-        let translatedText = '';
-        for (const part of parts) {
-            const translatedPart = await translateText(part);
-            translatedText += translatedPart + '\n'; // Combiner les morceaux traduits
+        // Envoyer chaque morceau avec un délai pour éviter l'envoi en une seule fois
+        for (const morceau of morceaux) {
+            await sendMessage(senderId, morceau);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre 1 seconde entre chaque envoi
         }
-
-        // Formater la réponse avec les informations traduites
-        const reply = `*Définition de ${word} :*\n\n${translatedText}`;
-
-        // Attendre 2 secondes avant d'envoyer la réponse
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Envoyer la réponse traduite à l'utilisateur
-        await sendMessage(senderId, reply);
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API de définition ou MyMemory:', error);
-
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la recherche ou de la traduction.");
+        console.error("Erreur lors de l'appel à l'API de définition:", error);
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la récupération de la définition.");
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "definition",  // Le nom de la commande
-    description: "Recherche des définitions et traduit en français.",  // Description de la commande
-    usage: "Envoyez 'definition <terme>' pour obtenir la définition traduite en français."  // Comment utiliser la commande
+    name: "definition",  // Le nom de la commande modifié
+    description: "Obtenez la définition complète d'un mot depuis le CNRTL.", // Nouvelle description de la commande
+    usage: "Envoyez 'definition <mot>' pour obtenir la définition du mot spécifié."  // Usage mis à jour
 };
