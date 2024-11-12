@@ -19,7 +19,7 @@ module.exports = async (senderId, userText) => {
         await sendMessage(senderId, "🌀💬 En route vers la réponse parfaite… 💬🌀");
 
         // Appeler l'API avec le prompt fourni et l'ID utilisateur
-        const apiUrl = `${BASE_API_URL}?text=${encodeURIComponent(prompt)}&userId=${senderId}`;
+        const apiUrl = `${BASE_API_URL}?question=${encodeURIComponent(prompt)}&userId=${senderId}`;
         const response = await axios.get(apiUrl);
 
         // Récupérer la réponse de l'API
