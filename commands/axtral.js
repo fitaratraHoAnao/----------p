@@ -6,18 +6,25 @@ module.exports = async (senderId, prompt) => {
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "🎩✨ Un peu de magie en préparation… ✨🎩");
 
-        // Appeler la nouvelle API avec le prompt de l'utilisateur
+        // Appeler l'API avec le prompt de l'utilisateur
         const apiUrl = `https://api.kenliejugarap.com/prefind/?question=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer la bonne clé dans la réponse de l'API
-        const reply = response.data.response; // Utiliser la clé correcte
+        // Récupérer la réponse et la diviser en morceaux si elle est trop longue
+        const fullReply = response.data.response; // Réponse complète de l'API
+        const chunkSize = 2000; // Taille maximum de chaque message (par exemple, 2000 caractères)
+        const chunks = [];
 
-        // Attendre 2 secondes avant d'envoyer la réponse
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Diviser le texte en morceaux
+        for (let i = 0; i < fullReply.length; i += chunkSize) {
+            chunks.push(fullReply.slice(i, i + chunkSize));
+        }
 
-        // Envoyer la réponse de l'API à l'utilisateur
-        await sendMessage(senderId, reply);
+        // Envoyer chaque morceau avec un délai
+        for (const chunk of chunks) {
+            await sendMessage(senderId, chunk);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Délai de 1 seconde entre les envois
+        }
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API:', error);
 
