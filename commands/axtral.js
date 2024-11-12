@@ -1,47 +1,35 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Déclaration de l'URL de base de votre API
-const BASE_API_URL = 'https://api.kenliejugarap.com/prefind/';
-
-module.exports = async (senderId, userText) => {
-    // Extraire le prompt en retirant le préfixe 'ai' et en supprimant les espaces superflus
-    const prompt = userText.slice(3).trim();
-
-    // Vérifier si le prompt est vide
-    if (!prompt) {
-        await sendMessage(senderId, 'Veuillez fournir une question ou un sujet pour que je puisse vous aider.');
-        return;
-    }
-
+module.exports = async (senderId, prompt) => {
     try {
-        // Envoyer un message de confirmation que la requête est en cours de traitement
-        await sendMessage(senderId, "🌀💬 En route vers la réponse parfaite… 💬🌀");
+        // Envoyer un message de confirmation que le message a été reçu
+        await sendMessage(senderId, "🎩✨ Un peu de magie en préparation… ✨🎩");
 
-        // Appeler l'API avec le prompt fourni et l'ID utilisateur
-        const apiUrl = `${BASE_API_URL}?question=${encodeURIComponent(prompt)}&userId=${senderId}`;
+        // Appeler la nouvelle API avec le prompt de l'utilisateur
+        const apiUrl = `https://api.kenliejugarap.com/prefind/?question=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer la réponse de l'API
-        const reply = response.data.response;
+        // Récupérer la bonne clé dans la réponse de l'API
+        const reply = response.data.response; // Utiliser la clé correcte
 
-        // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
+        // Attendre 2 secondes avant d'envoyer la réponse
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Envoyer la réponse de l'API à l'utilisateur
         await sendMessage(senderId, reply);
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API Cohere:', error);
+        console.error('Erreur lors de l\'appel à l\'API:', error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question.');
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "axtral",  // Le nom de la commande
-    description: "Envoyer une question ou un sujet pour obtenir une réponse générée par l'IA.",  // Description de la commande
-    usage: "Envoyez 'axtral <votre question>' pour obtenir une réponse."  // Comment utiliser la commande
+    description: "Permet de discuter avec le ✨ Bot.",  // Description de la commande
+    usage: "Envoyez 'axtral <message>' pour poser une question ou démarrer une conversation."  // Comment utiliser la commande
 };
 
