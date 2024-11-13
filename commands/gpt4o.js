@@ -16,7 +16,7 @@ module.exports = async (senderId, userText) => {
 
     try {
         // Envoyer un message de confirmation que la requête est en cours de traitement
-        await sendMessage(senderId, "📲💫 Patientez, la réponse arrive… 💫📲");
+        await sendMessage(senderId, "🧠💡 Je réfléchis à votre réponse… 💡🧠");
 
         // Appeler l'API avec le prompt fourni et l'ID utilisateur
         const apiUrl = `${BASE_API_URL}?prompt=${encodeURIComponent(prompt)}&userId=${senderId}`;
