@@ -4,7 +4,7 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, prompt) => {
     const [menuCmd, commandName] = prompt.split(' ').map(str => str.trim()); // Extraire le nom de la commande (si spécifié)
-    const page = parseInt(menuCmd.replace('menu', '').trim()) || 1; // Obtenir le numéro de page (default à 1)
+    const page = parseInt(menuCmd.replace(/menu\s*/, '').trim()) || 1; // Supporte "menu 2" et "menu2"
     const commandsPerPage = 10; // Nombre maximal de commandes par page
 
     try {
