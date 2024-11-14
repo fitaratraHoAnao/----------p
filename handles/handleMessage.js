@@ -6,6 +6,7 @@ const axios = require('axios');
 const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
 const commands = {};
 
+// Charger toutes les commandes du dossier 'commands'
 for (const file of commandFiles) {
     const commandName = file.replace('.js', '');
     commands[commandName] = require(`../commands/${file}`);
@@ -33,10 +34,6 @@ function detectExerciseKeywords(text) {
 const handleMessage = async (event, api) => {
     const senderId = event.sender.id;
     const message = event.message;
-
-    if (message.text) {
-        await api.setMessageReaction("✅", event.messageID, true);
-    }
 
     const typingMessage = "🇲🇬 *Bruno* rédige sa réponse... un instant, s'il vous plaît 🍟";
     await sendMessage(senderId, typingMessage);
@@ -98,7 +95,7 @@ const handleMessage = async (event, api) => {
         return;
     }
 
-    if (activeCommands[senderId] && activeCommands[senderId] !== 'menu') {
+    if (activeCommands[senderId] && activeCommands[senderId] !== 'help') {
         const activeCommand = activeCommands[senderId];
         await commands[activeCommand](senderId, message.text);
         return;
@@ -109,7 +106,7 @@ const handleMessage = async (event, api) => {
         if (userText.startsWith(commandName)) {
             const commandPrompt = userText.replace(commandName, '').trim();
 
-            if (commandName === 'menu') {
+            if (commandName === 'help') {
                 await commands[commandName](senderId, commandPrompt);
             } else {
                 activeCommands[senderId] = commandName;
