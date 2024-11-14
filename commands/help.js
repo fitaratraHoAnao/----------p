@@ -23,11 +23,11 @@ module.exports = async (senderId, page) => {
     const commandsToShow = commands.slice(startIndex, endIndex);
 
     // Construire le message de réponse
-    let message = `📋 *Liste des commandes (page ${pageNumber}/${totalPages})*:\n\n`;
+    let message = `🇲🇬 *Liste des commandes 🇲🇬 (page ${pageNumber}/${totalPages})*:\n\n`;
     commandsToShow.forEach((command, index) => {
         message += `${startIndex + index + 1}- ${command.name}\n`;
-        message += `  Description: ${command.description}\n`;
-        message += `  Usage: ${command.usage}\n\n`;
+        message += `  ✅ Description 👉: ${command.description}\n`;
+        message += `  ✅ Usage 👉: ${command.usage}\n\n`;
     });
 
     // Indiquer comment naviguer vers les pages suivantes/précédentes
