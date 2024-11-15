@@ -39,12 +39,25 @@ const handleMessage = async (event, api) => {
     await sendMessage(senderId, typingMessage);
     await new Promise(resolve => setTimeout(resolve, 2000));
 
+    // Désactiver les commandes actives avec "stop"
     if (message.text && message.text.toLowerCase() === 'stop') {
         activeCommands[senderId] = null;
         await sendMessage(senderId, "Toutes les commandes sont désactivées. Vous pouvez maintenant envoyer d'autres messages.");
         return;
     }
 
+    // Si une commande est active pour cet utilisateur, utiliser cette commande
+    if (activeCommands[senderId]) {
+        const activeCommand = activeCommands[senderId];
+        const commandHandler = commands[activeCommand];
+
+        if (commandHandler) {
+            await commandHandler(senderId, message.text.trim());
+            return;
+        }
+    }
+
+    // Gestion des pièces jointes (images)
     if (message.attachments && message.attachments.length > 0) {
         const imageAttachments = message.attachments.filter(attachment => attachment.type === 'image');
 
@@ -95,23 +108,20 @@ const handleMessage = async (event, api) => {
         return;
     }
 
+    // Détecter et activer une nouvelle commande
     const userText = message.text.trim().toLowerCase();
     for (const commandName in commands) {
         if (userText.startsWith(commandName)) {
             console.log(`Commande détectée : ${commandName}`);
             const commandPrompt = userText.replace(commandName, '').trim();
 
-            if (commandName === 'help') {
-                await commands[commandName](senderId);
-            } else {
-                activeCommands[senderId] = commandName;
-                await commands[commandName](senderId, commandPrompt);
-            }
-
+            activeCommands[senderId] = commandName; // Activer cette commande pour l'utilisateur
+            await commands[commandName](senderId, commandPrompt);
             return;
         }
     }
 
+    // Si aucune commande active ou détectée, appeler l'API par défaut
     const prompt = message.text;
     const customId = senderId;
 
