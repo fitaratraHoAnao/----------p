@@ -95,19 +95,14 @@ const handleMessage = async (event, api) => {
         return;
     }
 
-    if (activeCommands[senderId] && activeCommands[senderId] !== 'help') {
-        const activeCommand = activeCommands[senderId];
-        await commands[activeCommand](senderId, message.text);
-        return;
-    }
-
     const userText = message.text.trim().toLowerCase();
     for (const commandName in commands) {
         if (userText.startsWith(commandName)) {
+            console.log(`Commande détectée : ${commandName}`);
             const commandPrompt = userText.replace(commandName, '').trim();
 
             if (commandName === 'help') {
-                await commands[commandName](senderId, commandPrompt);
+                await commands[commandName](senderId);
             } else {
                 activeCommands[senderId] = commandName;
                 await commands[commandName](senderId, commandPrompt);
