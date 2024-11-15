@@ -39,14 +39,14 @@ const handleMessage = async (event, api) => {
     await sendMessage(senderId, typingMessage);
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Gestion de la commande "stop" pour désactiver les commandes persistantes
+    // Commande stop : désactive toutes les commandes persistantes
     if (message.text && message.text.toLowerCase() === 'stop') {
         activeCommands[senderId] = null;
         await sendMessage(senderId, "Toutes les commandes sont désactivées. Vous pouvez maintenant envoyer d'autres messages.");
         return;
     }
 
-    // Gestion des pièces jointes (exemple : images)
+    // Gestion des pièces jointes (images)
     if (message.attachments && message.attachments.length > 0) {
         const imageAttachments = message.attachments.filter(attachment => attachment.type === 'image');
 
@@ -97,34 +97,37 @@ const handleMessage = async (event, api) => {
         return;
     }
 
+    // Traitement des commandes
     const userText = message.text.trim().toLowerCase();
 
-    // Vérification des commandes disponibles
+    // Si une commande persistante est active pour cet utilisateur
+    if (activeCommands[senderId] && activeCommands[senderId] !== 'help') {
+        const activeCommand = activeCommands[senderId];
+        console.log(`Commande persistante en cours pour ${senderId}: ${activeCommand}`);
+        await commands[activeCommand](senderId, userText);
+        return;
+    }
+
+    // Détecter et exécuter une commande
     for (const commandName in commands) {
         if (userText.startsWith(commandName)) {
             console.log(`Commande détectée : ${commandName}`);
             const commandPrompt = userText.replace(commandName, '').trim();
 
-            // Exception pour la commande "help"
             if (commandName === 'help') {
+                // La commande help ne devient pas persistante
+                await commands[commandName](senderId);
+                return;
+            } else {
+                // Activer une commande persistante
+                activeCommands[senderId] = commandName;
                 await commands[commandName](senderId, commandPrompt);
-                return; // Répondre uniquement sans activer la commande persistante
+                return;
             }
-
-            activeCommands[senderId] = commandName; // Activer cette commande pour l'utilisateur
-            await commands[commandName](senderId, commandPrompt);
-            return;
         }
     }
 
-    // Vérifier si une commande persistante est active pour l'utilisateur
-    const activeCommand = activeCommands[senderId];
-    if (activeCommand && commands[activeCommand]) {
-        await commands[activeCommand](senderId, userText);
-        return;
-    }
-
-    // Traitement par défaut pour les messages texte
+    // Réponse par défaut via Gemini si aucune commande n'est active
     const prompt = message.text;
     const customId = senderId;
 
