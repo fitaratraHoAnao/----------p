@@ -39,14 +39,14 @@ const handleMessage = async (event, api) => {
     await sendMessage(senderId, typingMessage);
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Commande stop : désactive toutes les commandes persistantes
+    // Commande "stop" pour désactiver toutes les commandes persistantes
     if (message.text && message.text.toLowerCase() === 'stop') {
         activeCommands[senderId] = null;
         await sendMessage(senderId, "Toutes les commandes sont désactivées. Vous pouvez maintenant envoyer d'autres messages.");
         return;
     }
 
-    // Gestion des pièces jointes (images)
+    // Si des pièces jointes sont envoyées
     if (message.attachments && message.attachments.length > 0) {
         const imageAttachments = message.attachments.filter(attachment => attachment.type === 'image');
 
@@ -97,7 +97,6 @@ const handleMessage = async (event, api) => {
         return;
     }
 
-    // Traitement des commandes
     const userText = message.text.trim().toLowerCase();
 
     // Si une commande persistante est active pour cet utilisateur
@@ -115,8 +114,9 @@ const handleMessage = async (event, api) => {
             const commandPrompt = userText.replace(commandName, '').trim();
 
             if (commandName === 'help') {
-                // La commande help ne devient pas persistante
+                // La commande help est exécutée mais ne devient pas persistante
                 await commands[commandName](senderId);
+                activeCommands[senderId] = null; // Désactivation automatique
                 return;
             } else {
                 // Activer une commande persistante
@@ -127,7 +127,7 @@ const handleMessage = async (event, api) => {
         }
     }
 
-    // Réponse par défaut via Gemini si aucune commande n'est active
+    // Si aucune commande n'est active ou détectée, utiliser Gemini
     const prompt = message.text;
     const customId = senderId;
 
