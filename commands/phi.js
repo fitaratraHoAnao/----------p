@@ -18,22 +18,23 @@ module.exports = async (senderId, userText) => {
         // Envoyer un message de confirmation que la requête est en cours de traitement
         await sendMessage(senderId, "💭📡 Connexion au flux d’informations… 📡💭");
 
-        // Appeler l'API avec le prompt fourni et l'ID utilisateur
+        // Construire l'URL d'appel à l'API
         const apiUrl = `${BASE_API_URL}?q=${encodeURIComponent(prompt)}&uid=${senderId}`;
+        console.log('URL appelée :', apiUrl);
+
+        // Appeler l'API
         const response = await axios.get(apiUrl);
+        console.log('Réponse complète de l\'API :', response.data);
 
-        // Récupérer la réponse de l'API
-        const reply = response.data.response;
-
-        // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Extraire le résultat de la réponse
+        const reply = response.data.result;
 
         // Envoyer la réponse de l'API à l'utilisateur
         await sendMessage(senderId, reply);
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API:', error);
+        console.error('Erreur lors de l\'appel à l\'API:', error.response?.data || error.message);
 
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        // Envoyer un message d'erreur à l'utilisateur
         await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question.');
     }
 };
@@ -45,3 +46,4 @@ module.exports.info = {
     usage: "Envoyez 'phi <votre question>' pour obtenir une réponse." // Nouveau mode d'emploi
 };
 
+          
