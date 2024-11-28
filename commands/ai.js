@@ -1,27 +1,12 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage');
+const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Déclaration des URL de vos APIs
+// Déclaration de l'URL de base de votre API
 const BASE_API_URL = 'https://api.kenliejugarap.com/ministral-3b-paid/';
 const DATE_API_URL = 'https://date-heure.vercel.app/date?heure=Madagascar';
 
-// Gestion des sessions utilisateur pour maintenir l'état actif
-const userSessions = {};
-
 module.exports = async (senderId, userText) => {
-    // Vérifier si l'utilisateur a activé la commande "ai"
-    if (!userSessions[senderId] && !userText.startsWith("ai ")) {
-        await sendMessage(senderId, 'Pour démarrer, utilisez la commande "ai <votre question>".');
-        return;
-    }
-
-    // Activer ou réutiliser la session de l'utilisateur
-    if (userText.startsWith("ai ")) {
-        userSessions[senderId] = true; // Activer l'état "IA active" pour l'utilisateur
-        userText = userText.slice(3).trim(); // Supprimer le préfixe "ai" du message
-    }
-
-    // Vérifier si le message est vide
+    // Vérifier si le message est vide ou ne contient que des espaces
     if (!userText.trim()) {
         await sendMessage(senderId, 'Veuillez fournir une question ou un sujet pour que je puisse vous aider.');
         return;
@@ -31,45 +16,53 @@ module.exports = async (senderId, userText) => {
         // Envoyer un message de confirmation que la requête est en cours de traitement
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Appeler l'API principale pour obtenir la réponse IA
+        // Appeler l'API principale pour obtenir une réponse à la question
         const apiUrl = `${BASE_API_URL}?question=${encodeURIComponent(userText)}&userId=${senderId}`;
-        const aiResponse = await axios.get(apiUrl);
+        const response = await axios.get(apiUrl);
+        const reply = response.data.response;
 
-        // Appeler l'API de la date pour obtenir l'heure actuelle
+        // Appeler l'API de date pour obtenir la date et l'heure actuelles
         const dateResponse = await axios.get(DATE_API_URL);
+        const { date_actuelle, heure_actuelle } = dateResponse.data;
 
-        // Extraire les données des réponses des deux APIs
-        const aiReply = aiResponse.data.response;
-        const currentDate = dateResponse.data.date_actuelle;
-        const currentTime = dateResponse.data.heure_actuelle;
-        const location = dateResponse.data.localisation;
+        // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Construire le message final
-        const finalMessage = `
+        // Formater et envoyer la réponse complète
+        const formattedReply = `
 🤖 • 𝗕𝗿𝘂𝗻𝗼𝗖𝗵𝗮𝘁
 ━━━━━━━━━━━━━━
 ❓𝗬𝗼𝘂𝗿 𝗤𝘂𝗲𝘀𝘁𝗶𝗼𝗻: ${userText}
 ━━━━━━━━━━━━━━
-✅ 𝗔𝗻𝘀𝘄𝗲𝗿: ${aiReply}
+✅ 𝗔𝗻𝘀𝘄𝗲𝗿: ${reply}
 ━━━━━━━━━━━━━━
-⏰ 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲: ${currentDate}, ${currentTime} à ${location}
+⏰ 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲: ${date_actuelle}, ${heure_actuelle} à Madagascar
 
 🇲🇬Lien Facebook de l'admin: ✅https://www.facebook.com/bruno.rakotomalala.7549
-`;
+        `.trim();
 
-        // Envoyer le message final
-        await sendMessage(senderId, finalMessage);
+        await sendMessage(senderId, formattedReply);
     } catch (error) {
-        console.error('Erreur lors de l\'appel à une API:', error);
+        console.error('Erreur lors de l\'appel à l\'API :', error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question.');
+        await sendMessage(senderId, `
+🤖 • 𝗕𝗿𝘂𝗻𝗼𝗖𝗵𝗮𝘁
+━━━━━━━━━━━━━━
+❓𝗬𝗼𝘂𝗿 𝗤𝘂𝗲𝘀𝘁𝗶𝗼𝗻: ${userText}
+━━━━━━━━━━━━━━
+✅ 𝗔𝗻𝘀𝘄𝗲𝗿: Désolé, une erreur s'est produite lors du traitement de votre question.
+━━━━━━━━━━━━━━
+⏰ 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲: Impossible de récupérer l'heure.
+
+🇲🇬Lien Facebook de l'admin: ✅https://www.facebook.com/bruno.rakotomalala.7549
+        `.trim());
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "ai",  // Le nom de la commande
-    description: "Envoyer une question ou un sujet pour activer et interagir avec l'IA.",  // Description de la commande
-    usage: "Envoyez 'ai <votre question>' pour activer l'IA, puis envoyez vos questions directement."  // Comment utiliser la commande
+    description: "Posez directement votre question ou donnez un sujet pour obtenir une réponse générée par l'IA.",  // Description de la commande
+    usage: "Envoyez simplement votre question ou sujet."  // Comment utiliser la commande
 };
