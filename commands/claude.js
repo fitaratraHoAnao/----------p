@@ -28,14 +28,24 @@ module.exports = async (senderId, userText) => {
     try {
         await sendMessage(senderId, "📲💫 Patientez, la réponse arrive… 💫📲");
 
-        // Préparer l'historique de la conversation
-        const conversationHistory = userSessions[senderId]
+        // Limiter l'historique à 5 messages récents pour éviter les données excessives
+        const recentHistory = userSessions[senderId].slice(-5);
+        const conversationHistory = recentHistory
             .map(entry => `${entry.role}: ${entry.content}`)
             .join('\n');
 
-        // Appel à l'API Claude avec l'historique
-        const apiUrl = `${BASE_API_URL}?text=${encodeURIComponent(conversationHistory)}&userId=${senderId}`;
-        const response = await axios.get(apiUrl);
+        // Vérifier si la requête dépasse la longueur autorisée
+        if (conversationHistory.length > 5000) { // Ajuster cette limite selon votre API
+            await sendMessage(senderId, 'Votre requête est trop longue. Veuillez réduire la taille de votre question.');
+            return;
+        }
+
+        // Appel à l'API Claude avec la méthode POST
+        const response = await axios.post(BASE_API_URL, {
+            text: conversationHistory, // Historique limité
+            userId: senderId
+        });
+
         const reply = response.data.response;
 
         // Ajouter la réponse du bot à l'historique de conversation de l'utilisateur
