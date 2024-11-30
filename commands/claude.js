@@ -10,10 +10,10 @@ const MYMEMORY_API_URL = 'https://api.mymemory.translated.net/get';
 const userSessions = {};
 
 module.exports = async (senderId, userText) => {
-    const prompt = userText.slice(6).trim(); // Extraire le prompt en retirant le préfixe 'claude'
-
+    // Vérifier si le message contient du texte
+    const prompt = userText.trim();
     if (!prompt) {
-        await sendMessage(senderId, 'Veuillez fournir une question ou un sujet pour que je puisse vous aider.');
+        await sendMessage(senderId, 'Veuillez poser une question ou fournir un sujet pour que je puisse vous aider.');
         return;
     }
 
@@ -28,7 +28,7 @@ module.exports = async (senderId, userText) => {
     try {
         await sendMessage(senderId, "📲💫 Patientez, la réponse arrive… 💫📲");
 
-        // Limiter l'historique à 5 messages récents pour éviter les données excessives
+        // Limiter l'historique à 5 messages récents pour éviter des données excessives
         const recentHistory = userSessions[senderId].slice(-5);
         const conversationHistory = recentHistory
             .map(entry => `${entry.role}: ${entry.content}`)
@@ -80,6 +80,6 @@ module.exports = async (senderId, userText) => {
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "claude",
-    description: "Envoyer une question ou un sujet pour obtenir une réponse générée par l'IA.",
-    usage: "Envoyez 'claude <votre question>' pour obtenir une réponse."
+    description: "Posez directement une question ou un sujet pour obtenir une réponse générée par l'IA.",
+    usage: "Envoyez simplement votre question ou sujet, sans préfixe."
 };
