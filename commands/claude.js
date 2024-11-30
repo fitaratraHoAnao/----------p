@@ -1,85 +1,101 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Déclaration de l'URL de base de votre API
+// Déclaration des URL d'API
 const BASE_API_URL = 'https://api.kenliejugarap.com/blackbox-claude/';
-// URL de l'API MyMemory pour la traduction
 const MYMEMORY_API_URL = 'https://api.mymemory.translated.net/get';
 
 // Stockage des sessions pour conserver le contexte de la conversation
 const userSessions = {};
 
 module.exports = async (senderId, userText) => {
-    // Vérifier si le message contient du texte
-    const prompt = userText.trim();
-    if (!prompt) {
-        await sendMessage(senderId, 'Veuillez poser une question ou fournir un sujet pour que je puisse vous aider.');
-        return;
-    }
+    const prompt = userText.slice(6).trim(); // Extraire le prompt en retirant le préfixe 'claude'
 
-    // Initialiser la session de l'utilisateur s'il n'existe pas encore
-    if (!userSessions[senderId]) {
-        userSessions[senderId] = [];
-    }
+    if (!prompt) {
+        await sendMessage(senderId, 'Veuillez fournir une question ou un sujet pour que je puisse vous aider.');
+        return;
+    }
 
-    // Ajouter le prompt actuel à l'historique de conversation de l'utilisateur
-    userSessions[senderId].push({ role: 'user', content: prompt });
+    // Initialiser la session de l'utilisateur si elle n'existe pas encore
+    if (!userSessions[senderId]) {
+        userSessions[senderId] = [];
+    }
 
-    try {
-        await sendMessage(senderId, "📲💫 Patientez, la réponse arrive… 💫📲");
+    // Ajouter le prompt actuel à l'historique de conversation de l'utilisateur
+    userSessions[senderId].push({ role: 'user', content: prompt });
 
-        // Limiter l'historique à 5 messages récents pour éviter des données excessives
-        const recentHistory = userSessions[senderId].slice(-5);
-        const conversationHistory = recentHistory
-            .map(entry => `${entry.role}: ${entry.content}`)
-            .join('\n');
+    try {
+        await sendMessage(senderId, "📲💫 Patientez, la réponse arrive… 💫📲");
 
-        // Vérifier si la requête dépasse la longueur autorisée
-        if (conversationHistory.length > 5000) { // Ajuster cette limite selon votre API
-            await sendMessage(senderId, 'Votre requête est trop longue. Veuillez réduire la taille de votre question.');
-            return;
-        }
+        // Préparer l'historique de la conversation
+        const conversationHistory = userSessions[senderId]
+            .map(entry => `${entry.role}: ${entry.content}`)
+            .join('\n');
 
-        // Appel à l'API Claude avec la méthode POST
-        const response = await axios.post(BASE_API_URL, {
-            text: conversationHistory, // Historique limité
-            userId: senderId
-        });
+        // Appel à l'API Claude avec l'historique
+        const apiUrl = `${BASE_API_URL}?text=${encodeURIComponent(conversationHistory)}&userId=${senderId}`;
+        const response = await axios.get(apiUrl);
+        const reply = response.data.response;
 
-        const reply = response.data.response;
+        // Ajouter la réponse du bot à l'historique de conversation de l'utilisateur
+        userSessions[senderId].push({ role: 'bot', content: reply });
 
-        // Ajouter la réponse du bot à l'historique de conversation de l'utilisateur
-        userSessions[senderId].push({ role: 'bot', content: reply });
+        // Fonction pour découper un texte en segments de taille maximale
+        const splitText = (text, maxLength) => {
+            const words = text.split(' ');
+            const segments = [];
+            let currentSegment = [];
 
-        // Fonction pour traduire un texte en français via MyMemory
-        const translateToFrench = async (text) => {
-            const response = await axios.get(MYMEMORY_API_URL, {
-                params: {
-                    q: text,
-                    langpair: 'en|fr'
-                }
-            });
-            return response.data.responseData.translatedText;
-        };
+            words.forEach(word => {
+                if ((currentSegment.join(' ').length + word.length + 1) <= maxLength) {
+                    currentSegment.push(word);
+                } else {
+                    segments.push(currentSegment.join(' '));
+                    currentSegment = [word];
+                }
+            });
 
-        // Découper la réponse en phrases pour traduire chaque segment
-        const segments = reply.split(/(?<=\.)\s+/); // Découpe par phrase
+            if (currentSegment.length > 0) {
+                segments.push(currentSegment.join(' '));
+            }
 
-        // Traduire chaque segment et combiner les traductions
-        const translatedSegments = await Promise.all(segments.map(translateToFrench));
-        const translatedReply = translatedSegments.join(' ');
+            return segments;
+        };
 
-        // Envoyer la réponse traduite à l'utilisateur
-        await sendMessage(senderId, translatedReply);
-    } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API Claude ou MyMemory:', error);
-        await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question.');
-    }
+        // Découper la réponse en segments de 500 mots
+        const segments = splitText(reply, 500);
+
+        // Traduire chaque segment en français
+        const translateToFrench = async (text) => {
+            try {
+                const response = await axios.get(MYMEMORY_API_URL, {
+                    params: {
+                        q: text,
+                        langpair: 'en|fr'
+                    }
+                });
+                return response.data.responseData.translatedText;
+            } catch (error) {
+                console.error('Erreur lors de la traduction :', error);
+                return 'Erreur de traduction pour ce segment.';
+            }
+        };
+
+        // Traduire chaque segment et assembler les résultats
+        const translatedSegments = await Promise.all(segments.map(segment => translateToFrench(segment)));
+        const translatedReply = translatedSegments.join(' ');
+
+        // Envoyer la réponse traduite à l'utilisateur
+        await sendMessage(senderId, translatedReply);
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à l\'API Claude ou MyMemory:', error);
+        await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question. Veuillez réessayer plus tard.');
+    }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "claude",
-    description: "Posez directement une question ou un sujet pour obtenir une réponse générée par l'IA.",
-    usage: "Envoyez simplement votre question ou sujet, sans préfixe."
+    name: "claude",
+    description: "Envoyer une question ou un sujet pour obtenir une réponse générée par l'IA.",
+    usage: "Envoyez 'claude <votre question>' pour obtenir une réponse."
 };
