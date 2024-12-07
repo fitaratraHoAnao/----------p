@@ -60,31 +60,52 @@ const handleMessage = async (event, api) => {
                     }
                     imageHistory[senderId].push(imageUrl);
 
-                    const ocrResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
-                        link: imageUrl,
-                        prompt: "Analyse du texte de l'image pour détection de mots-clés",
-                        customId: senderId
-                    });
+                    const userText = message.text ? message.text.trim().toLowerCase() : "";
+                    if (userText.startsWith("gleeze")) {
+                        // API Gleeze
+                        const prompt = userText.replace("gleeze", "").trim() || "Décrivez cette photo";
+                        const gleezeResponse = await axios.get(`https://kaiz-apis.gleeze.com/api/gpt-4o-pro`, {
+                            params: {
+                                q: prompt,
+                                uid: senderId,
+                                imageUrl
+                            }
+                        });
+                        const reply = gleezeResponse.data.response;
 
-                    const ocrText = ocrResponse.data.message || "";
-                    const hasExerciseKeywords = detectExerciseKeywords(ocrText);
-
-                    const prompt = hasExerciseKeywords
-                        ? "Faire cet exercice et donner la correction complète de cet exercice"
-                        : "Décrire cette photo";
-
-                    const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
-                        link: imageUrl,
-                        prompt,
-                        customId: senderId
-                    });
-
-                    const reply = response.data.message;
-
-                    if (reply) {
-                        await sendLongMessage(senderId, `Bruno : voici ma suggestion de réponse pour cette image :\n${reply}`);
+                        if (reply) {
+                            await sendLongMessage(senderId, `Bruno (Gleeze) : voici ma suggestion de réponse pour cette image :\n${reply}`);
+                        } else {
+                            await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour l'image.");
+                        }
                     } else {
-                        await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour l'image.");
+                        // API Gemini
+                        const ocrResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
+                            link: imageUrl,
+                            prompt: "Analyse du texte de l'image pour détection de mots-clés",
+                            customId: senderId
+                        });
+
+                        const ocrText = ocrResponse.data.message || "";
+                        const hasExerciseKeywords = detectExerciseKeywords(ocrText);
+
+                        const prompt = hasExerciseKeywords
+                            ? "Faire cet exercice et donner la correction complète de cet exercice"
+                            : "Décrire cette photo";
+
+                        const geminiResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
+                            link: imageUrl,
+                            prompt,
+                            customId: senderId
+                        });
+
+                        const reply = geminiResponse.data.message;
+
+                        if (reply) {
+                            await sendLongMessage(senderId, `Bruno : voici ma suggestion de réponse pour cette image :\n${reply}`);
+                        } else {
+                            await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour l'image.");
+                        }
                     }
                 } catch (error) {
                     console.error('Erreur lors de l\'analyse de l\'image :', error.response ? error.response.data : error.message);
