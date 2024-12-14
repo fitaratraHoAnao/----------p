@@ -44,7 +44,7 @@ module.exports = async (senderId, userText) => {
 
 // Ajouter les informations sur la commande
 module.exports.info = {
-    name: "aidetector",
+    name: "detector",
     description: "Analyse un texte pour déterminer s'il a été écrit par une IA ou un humain.",
     usage: "Envoyez 'aidetector <votre texte>' pour lancer l'analyse.",
 };
