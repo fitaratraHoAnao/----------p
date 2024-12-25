@@ -1,12 +1,11 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Déclaration des URL de base de vos APIs
-const LILY_API_URL = 'http://sgp1.hmvhostings.com:25743/lily?q=';
-const MYMEMORY_API_URL = 'https://api.mymemory.translated.net/get';
+// Déclaration de l'URL de base de votre API
+const BASE_API_URL = 'http://sgp1.hmvhostings.com:25743/lily?q=';
 
 module.exports = async (senderId, userText) => {
-    // Extraire le prompt en retirant le préfixe 'lily' et en supprimant les espaces superflus
+    // Extraire le prompt en retirant le préfixe 'ai' et en supprimant les espaces superflus
     const prompt = userText.slice(4).trim();
 
     // Vérifier si le prompt est vide
@@ -19,44 +18,20 @@ module.exports = async (senderId, userText) => {
         // Envoyer un message de confirmation que la requête est en cours de traitement
         await sendMessage(senderId, "📲💫 Patientez, la réponse arrive… 💫📲");
 
-        // Appeler l'API Lily avec le prompt fourni
-        const lilyApiUrl = `${LILY_API_URL}${encodeURIComponent(prompt)}`;
-        const lilyResponse = await axios.get(lilyApiUrl);
+        // Appeler l'API avec le prompt fourni
+        const apiUrl = `${BASE_API_URL}${encodeURIComponent(prompt)}`;
+        const response = await axios.get(apiUrl);
 
-        // Récupérer la réponse texte de l'API Lily
-        const lilyText = lilyResponse.data.lily[0]?.text || "Désolé, je n'ai pas pu obtenir de réponse.";
-
-        // Diviser le texte en morceaux de 500 caractères maximum
-        const textChunks = lilyText.match(/.{1,500}/g) || [];
-
-        let translatedChunks = [];
-
-        // Traduire chaque morceau avec l'API MyMemory
-        for (const chunk of textChunks) {
-            const myMemoryResponse = await axios.get(MYMEMORY_API_URL, {
-                params: {
-                    q: chunk,
-                    langpair: 'en|fr' // Traduire de l'anglais au français
-                }
-            });
-
-            const translatedText = myMemoryResponse.data.responseData.translatedText;
-            translatedChunks.push(translatedText);
-
-            // Attendre une courte durée pour éviter de surcharger l'API MyMemory
-            await new Promise(resolve => setTimeout(resolve, 500));
-        }
-
-        // Combiner tous les morceaux traduits en une seule réponse
-        const finalResponse = translatedChunks.join(' ');
+        // Récupérer la réponse de l'API
+        const reply = response.data.lily[0]?.text || "Désolé, je n'ai pas pu obtenir de réponse.";
 
         // Attendre 2 secondes avant d'envoyer la réponse pour un délai naturel
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Envoyer la réponse traduite à l'utilisateur
-        await sendMessage(senderId, finalResponse);
+        // Envoyer la réponse de l'API à l'utilisateur
+        await sendMessage(senderId, reply);
     } catch (error) {
-        console.error('Erreur lors du traitement:', error);
+        console.error('Erreur lors de l\'appel à l\'API Lily:', error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre question.');
