@@ -21,11 +21,15 @@ module.exports = async (senderId, args, pageAccessToken) => {
         if (response.data && response.data.status && response.data.result) {
             const reply = response.data.result;
 
-            // Attendre 2 secondes avant d'envoyer la réponse
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Découper la réponse en morceaux de 2000 caractères maximum
+            const maxChunkSize = 2000;
+            const chunks = reply.match(new RegExp(`.{1,${maxChunkSize}}`, 'g'));
 
-            // Envoyer la réponse de l'API
-            await sendMessage(senderId, reply);
+            for (const chunk of chunks) {
+                // Envoyer chaque morceau séparément avec un délai de 2 secondes entre chaque envoi
+                await sendMessage(senderId, chunk);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
         } else {
             throw new Error("La réponse de l'API est invalide.");
         }
