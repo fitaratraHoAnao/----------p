@@ -2,41 +2,41 @@ const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 module.exports = async (senderId, prompt) => {
-    try {
-        // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "🎩✨ Un peu de magie en préparation… ✨🎩");
+    try {
+        // Envoyer un message de confirmation que le message a été reçu
+        await sendMessage(senderId, "🎩✨ Un peu de magie en préparation… ✨🎩");
 
-        // Appeler l'API avec le prompt de l'utilisateur
-        const apiUrl = `https://api.kenliejugarap.com/prefind/?question=${encodeURIComponent(prompt)}`;
-        const response = await axios.get(apiUrl);
+        // Appeler l'API avec le prompt de l'utilisateur et l'UID
+        const apiUrl = `https://llama-api-nine.vercel.app/mixtral?question=${encodeURIComponent(prompt)}&uid=${senderId}`;
+        const response = await axios.get(apiUrl);
 
-        // Récupérer la réponse et la diviser en morceaux si elle est trop longue
-        const fullReply = response.data.response; // Réponse complète de l'API
-        const chunkSize = 2000; // Taille maximum de chaque message (par exemple, 2000 caractères)
-        const chunks = [];
+        // Récupérer la réponse de l'API
+        const userQuestion = response.data.question; // Question de l'utilisateur
+        const botResponse = response.data.response; // Réponse de l'API
 
-        // Diviser le texte en morceaux
-        for (let i = 0; i < fullReply.length; i += chunkSize) {
-            chunks.push(fullReply.slice(i, i + chunkSize));
-        }
+        // Formater la réponse complète
+        const formattedReply = `
+🇲🇬 𝗣𝗔𝗬𝗦 𝗠𝗔𝗗𝗔𝗚𝗔𝗦𝗖𝗔𝗥 🇲🇬
+❤️ 𝗩𝗼𝗶𝗰𝗶 𝘃𝗼𝘁𝗿𝗲 𝗾𝘂𝗲𝘀𝘁𝗶𝗼𝗻 : ${userQuestion}
+✅ 𝗥𝗲́𝗽𝗼𝗻𝘀𝗲 : ${botResponse}
+        `.trim();
 
-        // Envoyer chaque morceau avec un délai
-        for (const chunk of chunks) {
-            await sendMessage(senderId, chunk);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Délai de 1 seconde entre les envois
-        }
-    } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API:', error);
+        // Envoyer la réponse formatée à l'utilisateur
+        await sendMessage(senderId, formattedReply);
+    } catch (error) {
+        console.error("Erreur lors de l'appel à l'API :", error);
 
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
-    }
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        await sendMessage(senderId, `
+🇲🇬 𝗣𝗔𝗬𝗦 𝗠𝗔𝗗𝗔𝗚𝗔𝗦𝗖𝗔𝗥 🇲🇬
+❌ Une erreur s'est produite lors du traitement de votre question.
+        `.trim());
+    }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "axtral",  // Le nom de la commande
-    description: "Permet de discuter avec le ✨ Bot.",  // Description de la commande
-    usage: "Envoyez 'axtral <message>' pour poser une question ou démarrer une conversation."  // Comment utiliser la commande
+    name: "axtral",  // Le nom de la commande
+    description: "Permet de discuter avec le ✨ Bot.",  // Description de la commande
+    usage: "Envoyez 'axtral <message>' pour poser une question ou démarrer une conversation."  // Comment utiliser la commande
 };
-
