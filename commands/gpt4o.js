@@ -6,17 +6,16 @@ module.exports = async (senderId, prompt) => {
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "🧠💡 Je réfléchis à votre réponse… 💡🧠");
 
-        // Appeler l'API avec le prompt de l'utilisateur et l'UID
+        // Construire l'URL de l'API avec le prompt et l'UID de l'utilisateur
         const apiUrl = `https://llama-api-nine.vercel.app/gemma29?question=${encodeURIComponent(prompt)}&uid=${senderId}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer la réponse de l'API
-        const userQuestion = response.data.question; // Question de l'utilisateur
-        const botResponse = response.data.response; // Réponse de l'API
+        // Extraire la question de l'utilisateur et la réponse de l'API
+        const { question: userQuestion, response: botResponse } = response.data;
 
         // Formater la réponse complète
         const formattedReply = `
-🇲🇬 𝗠𝗔𝗗𝗔 BOT 🇲🇬
+🇲🇬 𝗠𝗔𝗗𝗔 𝗕𝗢𝗧 🇲🇬
 ❤️ 𝗩𝗼𝗶𝗰𝗶 𝘃𝗼𝘁𝗿𝗲 𝗾𝘂𝗲𝘀𝘁𝗶𝗼𝗻 : ${userQuestion}
 ✅ 𝗥𝗲́𝗽𝗼𝗻𝘀𝗲 : ${botResponse}
         `.trim();
@@ -28,7 +27,7 @@ module.exports = async (senderId, prompt) => {
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, `
-🇲🇬 𝗠𝗔𝗗A BOT 🇲🇬
+🇲🇬 𝗠𝗔𝗗𝗔 𝗕𝗢𝗧 🇲🇬
 ❌ Une erreur s'est produite lors du traitement de votre question.
         `.trim());
     }
