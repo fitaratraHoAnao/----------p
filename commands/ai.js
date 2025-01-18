@@ -1,9 +1,12 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Déclaration de l'URL de base de votre API
-const BASE_API_URL = 'https://api.kenliejugarap.com/ministral-3b-paid/';
+// Déclaration des URL de base de votre API
+const BASE_API_URL = 'https://llama-api-nine.vercel.app/llama';
 const DATE_API_URL = 'https://date-heure.vercel.app/date?heure=Madagascar';
+
+// Objet pour stocker le contexte des conversations par utilisateur
+const userConversations = {};
 
 module.exports = async (senderId, userText) => {
     // Vérifier si le message est vide ou ne contient que des espaces
@@ -13,11 +16,17 @@ module.exports = async (senderId, userText) => {
     }
 
     try {
+        // Initialiser ou mettre à jour le contexte de conversation pour cet utilisateur
+        if (!userConversations[senderId]) {
+            userConversations[senderId] = [];
+        }
+        userConversations[senderId].push(userText);
+
         // Envoyer un message de confirmation que la requête est en cours de traitement
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-        // Appeler l'API principale pour obtenir une réponse à la question
-        const apiUrl = `${BASE_API_URL}?question=${encodeURIComponent(userText)}&userId=${senderId}`;
+        // Construire l'URL de l'API avec la question et l'uid
+        const apiUrl = `${BASE_API_URL}?question=${encodeURIComponent(userText)}&uid=${senderId}`;
         const response = await axios.get(apiUrl);
         const reply = response.data.response;
 
