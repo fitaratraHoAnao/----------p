@@ -1,44 +1,34 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-module.exports = async (senderId, prompt) => {
+module.exports = async (senderId, prompt, uid = '123') => { // UID ajouté comme paramètre optionnel
     try {
-        // Si l'utilisateur envoie simplement "mail", on génère un mail temporaire
-        if (prompt.toLowerCase() === 'mail') {
-            // Appeler l'API pour générer un email temporaire
-            const apiUrl = `https://tempmail-api-blush.vercel.app/generate?tempmail=mail`;
-            const response = await axios.get(apiUrl);
+        // Envoyer un message de confirmation que le message a été reçu
+        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
-            // Récupérer le mail généré
-            const tempMail = response.data.tempmail;
+        // API pour créer une adresse email temporaire
+        const createMailUrl = 'https://kaiz-apis.gleeze.com/api/tempmail-create';
+        const createResponse = await axios.get(createMailUrl);
+        const emailData = createResponse.data;
 
-            // Envoyer le mail généré à l'utilisateur
-            await sendMessage(senderId, `Voici votre email temporaire : ${tempMail}`);
-        
-        } else if (prompt.includes('@')) {
-            // Si l'utilisateur envoie un email, on vérifie sa boîte de réception
-            const inboxUrl = `https://tempmail-api-blush.vercel.app/check?inbox=${encodeURIComponent(prompt)}`;
-            const inboxResponse = await axios.get(inboxUrl);
+        // Extraire l'adresse email et le token
+        const email = emailData.address;
+        const token = emailData.token;
 
-            // Récupérer la liste des emails dans la boîte de réception
-            const inbox = inboxResponse.data.inbox;
+        // Construire l'URL de l'API pour récupérer la boîte de réception
+        const inboxUrl = `https://kaiz-apis.gleeze.com/tempmail-inbox?token=${token}`;
+        const inboxResponse = await axios.get(inboxUrl);
 
-            if (inbox.length === 0) {
-                await sendMessage(senderId, "Votre boîte de réception est vide pour l'instant.");
-            } else {
-                // Formater les emails pour un affichage clair
-                let message = "Voici les emails reçus :\n";
-                inbox.forEach((email, index) => {
-                    message += `\nEmail ${index + 1}:\n- De: ${email.from}\n- Sujet: ${email.subject}\n- Date: ${email.date}\n`;
-                });
-                await sendMessage(senderId, message);
-            }
-        } else {
-            // Envoyer un message d'erreur si la commande n'est pas reconnue
-            await sendMessage(senderId, "Commande non reconnue. Envoyez 'mail' pour générer un email temporaire ou entrez un email pour vérifier sa boîte de réception.");
-        }
+        // Récupérer les messages de la boîte de réception
+        const inboxMessages = inboxResponse.data;
+
+        // Attendre 2 secondes avant d'envoyer la réponse
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Envoyer l'adresse email temporaire et les messages de l'inbox à l'utilisateur
+        await sendMessage(senderId, `Adresse temporaire: ${email}\nMessages reçus: ${JSON.stringify(inboxMessages, null, 2)}`);
     } catch (error) {
-        console.error('Erreur lors de l\'appel aux API:', error);
+        console.error('Erreur lors de l\'appel à l\'API TempMail:', error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre demande.");
@@ -48,6 +38,6 @@ module.exports = async (senderId, prompt) => {
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "tempmail",  // Le nom de la commande
-    description: "Génère un email temporaire et vérifie sa boîte de réception.",  // Description de la commande
-    usage: "Envoyez 'mail' pour générer un email temporaire ou entrez l'email généré pour vérifier sa boîte de réception."  // Comment utiliser la commande
+    description: "Génère une adresse email temporaire et affiche les emails reçus.",  // Description de la commande
+    usage: "Envoyez 'tempmail' pour obtenir une adresse email temporaire et consulter les messages."  // Comment utiliser la commande
 };
