@@ -4,7 +4,7 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 module.exports = async (senderId, prompt, uid) => { 
     try {
         // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "📲💫 Patientez, la réponse arrive… 💫📲");
+        await sendMessage(senderId, "🕒 Un instant, je suis en train de chercher ce que tu demandes… 🌟");
 
         // Construire l'URL de l'API pour résoudre la question avec UID
         const apiUrl = `https://kaiz-apis.gleeze.com/api/asta-ai?question=${encodeURIComponent(prompt)}&uid=${uid}`;
