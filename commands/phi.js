@@ -1,42 +1,29 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Déclaration de l'URL de base de votre API
-const BASE_API_URL = 'https://kaiz-apis.gleeze.com/api/claude-sonnet-3.5';
+module.exports = async (senderId, prompt, uid) => { 
+    try {
+        // Envoyer un message de confirmation que le message a été reçu
+        await sendMessage(senderId, "💭📡 Connexion au flux d’informations… 📡💭");
 
-module.exports = async (senderId, userText) => {
-    // Extraire le prompt en retirant le préfixe 'phi' et en supprimant les espaces superflus
-    const prompt = userText.slice(3).trim();
+        // Construire l'URL de l'API pour résoudre la question avec UID
+        const apiUrl = `https://kaiz-apis.gleeze.com/api/claude-sonnet-3.5?q=${encodeURIComponent(prompt)}&uid=${uid}`;
+        const response = await axios.get(apiUrl);
 
-    // Vérifier si le prompt est vide
-    if (!prompt) {
-        await sendMessage(senderId, 'Veuillez fournir une question ou un sujet pour que je puisse vous aider.');
-        return;
-    }
+        // Récupérer la bonne clé dans la réponse de l'API
+        const reply = response.data.response;
 
-    try {
-        // Envoyer un message de confirmation que la requête est en cours de traitement
-        await sendMessage(senderId, "💭📡 Connexion au flux d’informations… 📡💭");
+        // Attendre 2 secondes avant d'envoyer la réponse
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Construire l'URL d'appel à l'API
-        const apiUrl = `${BASE_API_URL}?q=${encodeURIComponent(prompt)}&uid=${senderId}`;
-        console.log('URL appelée :', apiUrl);
+        // Envoyer la réponse de l'API à l'utilisateur
+        await sendMessage(senderId, reply);
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à l\'API Luffy AI:', error);
 
-        // Appeler l'API
-        const response = await axios.get(apiUrl);
-        console.log('Réponse complète de l'API :', response.data);
-
-        // Extraire le résultat de la réponse
-        const reply = response.data.response;
-
-        // Envoyer la réponse de l'API à l'utilisateur
-        await sendMessage(senderId, reply);
-    } catch (error) {
-        console.error('Erreur lors de l'appel à l'API:', error.response?.data || error.message);
-
-        // Envoyer un message d'erreur à l'utilisateur
-        await sendMessage(senderId, 'Désolé, une erreur s'est produite lors du traitement de votre question.');
-    }
+        // Envoyer un message d'erreur à l'utilisateur en cas de problème
+        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
+    }
 };
 
 // Ajouter les informations de la commande
