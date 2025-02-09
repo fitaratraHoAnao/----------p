@@ -1,40 +1,45 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-module.exports = async (senderId, prompt, uid = '123') => { // UID ajouté comme paramètre optionnel
+// Sessions utilisateurs pour stocker les emails temporaires
+const userSessions = {};
+
+module.exports = async (senderId, prompt) => {
     try {
-        // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Message reçu, je prépare une réponse...");
+        // Vérifie si l'utilisateur a déjà une session active
+        if (userSessions[senderId] && userSessions[senderId].email && prompt === userSessions[senderId].email) {
+            // Si l'utilisateur envoie l'email temporaire généré, récupérer les messages
+            const inboxUrl = `https://xnil.xnil.unaux.com/xnil/tminbox?mail=${userSessions[senderId].email}`;
+            const inboxResponse = await axios.get(inboxUrl);
+            const inboxData = inboxResponse.data.data;
 
-        // API pour créer une adresse email temporaire
-        const createMailUrl = 'https://xnil.xnil.unaux.com/xnil/tmgen';
-        const createResponse = await axios.get(createMailUrl);
-        const emailData = createResponse.data.data; // Récupération de la réponse "data"
+            // Construire une réponse utilisateur à partir de la boîte de réception
+            let inboxMessages = "";
+            if (inboxData && inboxData.body_text) {
+                inboxMessages = `Expéditeur : ${inboxData.from}\nSujet : ${inboxData.subject}\nMessage :\n${inboxData.body_text}`;
+            } else {
+                inboxMessages = "Aucun message reçu pour le moment.";
+            }
 
-        // Extraire l'adresse email et le token
-        const email = emailData.email;
-        const token = emailData.token;
+            // Envoyer les messages reçus à l'utilisateur
+            await sendMessage(senderId, `Messages reçus :\n${inboxMessages}`);
 
-        // Attendre 2 secondes pour éviter d'éventuels délais API
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Construire l'URL de l'API pour récupérer la boîte de réception
-        const inboxUrl = `https://xnil.xnil.unaux.com/xnil/tminbox?mail=${email}`;
-        const inboxResponse = await axios.get(inboxUrl);
-        const inboxData = inboxResponse.data.data; // Récupération de la réponse "data"
-
-        // Construire une réponse utilisateur à partir de la boîte de réception
-        let inboxMessages = "";
-        if (inboxData && inboxData.body_text) {
-            inboxMessages = `Expéditeur: ${inboxData.from}\nSujet: ${inboxData.subject}\nMessage: ${inboxData.body_text}`;
+            // Supprime la session utilisateur après réponse
+            delete userSessions[senderId];
         } else {
-            inboxMessages = "Aucun message reçu pour le moment.";
-        }
+            // Génération d'un nouvel email temporaire
+            const createMailUrl = 'https://xnil.xnil.unaux.com/xnil/tmgen';
+            const createResponse = await axios.get(createMailUrl);
+            const emailData = createResponse.data.data;
 
-        // Envoyer l'adresse email temporaire et les messages de l'inbox à l'utilisateur
-        await sendMessage(senderId, `Adresse temporaire: ${email}\n\nMessages reçus:\n${inboxMessages}`);
+            // Sauvegarder l'email temporaire dans la session utilisateur
+            userSessions[senderId] = { email: emailData.email };
+
+            // Envoyer l'email temporaire généré à l'utilisateur
+            await sendMessage(senderId, emailData.email);
+        }
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API TempMail:', error);
+        console.error('Erreur lors de l\'appel à l\'API TempMail :', error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
         await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre demande.");
@@ -44,6 +49,6 @@ module.exports = async (senderId, prompt, uid = '123') => { // UID ajouté comme
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "tempmail",  // Le nom de la commande
-    description: "Génère une adresse email temporaire et affiche les emails reçus.",  // Description de la commande
-    usage: "Envoyez 'tempmail' pour obtenir une adresse email temporaire et consulter les messages."  // Comment utiliser la commande
+    description: "Génère une adresse email temporaire et affiche les emails reçus après saisie de l'email.",  // Description de la commande
+    usage: "Envoyez 'tempmail' pour obtenir une adresse email temporaire. Envoyez ensuite l'email généré pour consulter les messages."  // Comment utiliser la commande
 };
