@@ -7,26 +7,32 @@ module.exports = async (senderId, prompt, uid = '123') => { // UID ajouté comme
         await sendMessage(senderId, "Message reçu, je prépare une réponse...");
 
         // API pour créer une adresse email temporaire
-        const createMailUrl = 'https://kaiz-apis.gleeze.com/api/tempmail-create';
+        const createMailUrl = 'https://xnil.xnil.unaux.com/xnil/tmgen';
         const createResponse = await axios.get(createMailUrl);
-        const emailData = createResponse.data;
+        const emailData = createResponse.data.data; // Récupération de la réponse "data"
 
         // Extraire l'adresse email et le token
-        const email = emailData.address;
+        const email = emailData.email;
         const token = emailData.token;
 
-        // Construire l'URL de l'API pour récupérer la boîte de réception
-        const inboxUrl = `https://kaiz-apis.gleeze.com/tempmail-inbox?token=${token}`;
-        const inboxResponse = await axios.get(inboxUrl);
-
-        // Récupérer les messages de la boîte de réception
-        const inboxMessages = inboxResponse.data;
-
-        // Attendre 2 secondes avant d'envoyer la réponse
+        // Attendre 2 secondes pour éviter d'éventuels délais API
         await new Promise(resolve => setTimeout(resolve, 2000));
 
+        // Construire l'URL de l'API pour récupérer la boîte de réception
+        const inboxUrl = `https://xnil.xnil.unaux.com/xnil/tminbox?mail=${email}`;
+        const inboxResponse = await axios.get(inboxUrl);
+        const inboxData = inboxResponse.data.data; // Récupération de la réponse "data"
+
+        // Construire une réponse utilisateur à partir de la boîte de réception
+        let inboxMessages = "";
+        if (inboxData && inboxData.body_text) {
+            inboxMessages = `Expéditeur: ${inboxData.from}\nSujet: ${inboxData.subject}\nMessage: ${inboxData.body_text}`;
+        } else {
+            inboxMessages = "Aucun message reçu pour le moment.";
+        }
+
         // Envoyer l'adresse email temporaire et les messages de l'inbox à l'utilisateur
-        await sendMessage(senderId, `Adresse temporaire: ${email}\nMessages reçus: ${JSON.stringify(inboxMessages, null, 2)}`);
+        await sendMessage(senderId, `Adresse temporaire: ${email}\n\nMessages reçus:\n${inboxMessages}`);
     } catch (error) {
         console.error('Erreur lors de l\'appel à l\'API TempMail:', error);
 
