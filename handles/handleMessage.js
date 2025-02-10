@@ -35,7 +35,7 @@ const handleMessage = async (event, api) => {
     const senderId = event.sender.id;
     const message = event.message;
 
-    const typingMessage = "🇲🇬 *Bruno* rédige sa réponse... un instant, s'il vous plaît 🍟";
+    const typingMessage = "🇲🇬 🔄 Generating...🍟";
     await sendMessage(senderId, typingMessage);
     await new Promise(resolve => setTimeout(resolve, 2000));
 
