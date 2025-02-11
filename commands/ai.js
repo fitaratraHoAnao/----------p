@@ -1,3 +1,14 @@
+Voici mon api URL : https://kaiz-apis.gleeze.com/api/gpt-4o?ask=bonjour%20qui%20es-tu?&uid=1&webSearch=off
+
+"Bonjour qui es-tu?" Est une variable entré par l'utilisateur et uid aussi son variable mais websearch reste fixe
+
+Et voici la réponse Json : 
+{
+    "author": "Kaizenji",
+    "response": "Bonjour ! Je suis un assistant virtuel, conçu pour répondre à vos questions et vous aider avec diverses informations. Comment puis-je vous aider aujourd'hui ?"
+}
+
+Changer l'API URL de mon code suivant par le précédent : 
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
@@ -75,3 +86,9 @@ module.exports.info = {
     description: "Posez directement votre question ou donnez un sujet pour obtenir une réponse générée par l'IA.",  // Description de la commande
     usage: "Envoyez simplement votre question ou sujet."  // Comment utiliser la commande
 };
+
+Ne changer pas l'API date et heure vercel mais reste inchangé la date et heure api 
+
+
+
+
