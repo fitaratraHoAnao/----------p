@@ -3,14 +3,14 @@ const sendMessage = require('../handles/sendMessage'); // Importer la fonction s
 
 module.exports = async (senderId, prompt, uid) => { 
     try {
-        // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "📲💫 Patientez, la réponse arrive… 💫📲");
+        // Envoyer un message d'attente magnifique avec des emojis
+        await sendMessage(senderId, "✨🤖 Un instant magique... Je prépare une réponse éclairée pour toi ! ✨⌛");
 
-        // Construire l'URL de l'API pour résoudre la question avec UID
-        const apiUrl = `https://kaiz-apis.gleeze.com/api/claude-sonnet-3.5?q=${encodeURIComponent(prompt)}&uid=${uid}`;
+        // Construire l'URL de l'API pour résoudre la question
+        const apiUrl = `https://slogan-api.onrender.com/api/ai?model=claude-3-sonnet-20240229&system=You%20are%20a%20helpful%20assistant&question=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer la bonne clé dans la réponse de l'API
+        // Récupérer la réponse de l'API
         const reply = response.data.response;
 
         // Attendre 2 secondes avant d'envoyer la réponse
@@ -19,16 +19,16 @@ module.exports = async (senderId, prompt, uid) => {
         // Envoyer la réponse de l'API à l'utilisateur
         await sendMessage(senderId, reply);
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API Luffy AI:', error);
+        console.error("Erreur lors de l'appel à l'API Claude AI:", error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "Désolé, une erreur s'est produite lors du traitement de votre message.");
+        await sendMessage(senderId, "🚨 Oups ! Une erreur est survenue lors du traitement de ta demande. Réessaie plus tard ! 🤖");
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "luffy",  // Le nom de la commande
-    description: "Pose ta question à Luffy AI pour obtenir une réponse détaillée.",  // Description de la commande
-    usage: "Envoyez 'luffy <question>' pour poser une question à Luffy AI."  // Comment utiliser la commande
+    name: "claude",  // Le nom de la commande
+    description: "Pose ta question à Claude AI pour obtenir une réponse détaillée.",  // Description de la commande
+    usage: "Envoyez 'claude <question>' pour poser une question à Claude AI."  // Comment utiliser la commande
 };
