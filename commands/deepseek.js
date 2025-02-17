@@ -21,8 +21,9 @@ module.exports = async (senderId, prompt, uid) => {
         const apiUrl = `https://api-test-one-brown.vercel.app/deepseek?question=${encodeURIComponent(prompt)}&uid=${encodeURIComponent(uid)}`;
         const response = await axios.get(apiUrl);
 
-        // Récupérer la réponse de l'API
-        const reply = response.data.response;
+        // Récupérer la réponse de l'API et enlever les balises <think> et leur contenu
+        let reply = response.data.response;
+        reply = reply.replace(/<think>.*?<\/think>/gs, '').trim(); // Supprimer les balises <think>
 
         // Ajouter la réponse du bot à l'historique
         conversationHistory[senderId].push({ role: 'bot', message: reply });
@@ -46,3 +47,4 @@ module.exports.info = {
     description: "Pose ta question et obten une réponse magique avec deepseek.",  // Description de la commande
     usage: "Envoyez 'deepseek <question>' pour poser une question à Qwen-Coder."  // Comment utiliser la commande
 };
+    
