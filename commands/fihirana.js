@@ -18,7 +18,7 @@ module.exports = async (senderId, prompt, uid) => {
             return;
         }
 
-        // Envoyer successivement chaque résultat (titre et contenu)
+        // Envoyer successivement chaque résultat (titre et contenu) avec un délai d'une seconde entre chaque envoi
         for (let i = 0; i < results.length; i++) {
             const result = results[i];
             const message = `✅titre : ${result.title}\n\n${result.content}`;
@@ -36,7 +36,7 @@ module.exports = async (senderId, prompt, uid) => {
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "fihirana",  // Le nom de la commande
-    description: "Recherche et récupère des cantiques via l'API Hita Fihirana FFPM.",  // Description de la commande
-    usage: "Envoyez 'fihirana <terme>' pour récupérer le cantique correspondant."  // Comment utiliser la commande
+    name: "fihirana",
+    description: "Recherche et récupère des cantiques via l'API Hita Fihirana FFPM.",
+    usage: "Envoyez 'fihirana <terme>' pour récupérer le cantique correspondant."
 };
