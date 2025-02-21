@@ -1,40 +1,43 @@
-const fs = require('fs-extra');
+const fs = require('fs');
 const path = require('path');
 const sendMessage = require('../handles/sendMessage');
+const MAX_COMMANDS_PER_MESSAGE = 10; // Nombre maximum de commandes par message
 
-// Charger dynamiquement toutes les commandes du répertoire 'commands'
-const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
+// Fonction pour envoyer chaque bloc de messages avec un délai d'attente
+async function sendCommandsInChunks(senderId, commands) {
+    for (let i = 0; i < commands.length; i += MAX_COMMANDS_PER_MESSAGE) {
+        const commandChunk = commands.slice(i, i + MAX_COMMANDS_PER_MESSAGE);
+        let message = "🇲🇬 *Liste des commandes disponibles :*\n\n";
 
-const commandsList = commandFiles.map(file => {
-    const command = require(`../commands/${file}`);
-    return { 
-        name: command.info?.name || file.replace('.js', ''), 
-        description: command.info?.description || "Pas de description disponible.", 
-        usage: command.info?.usage || "Pas d'usage spécifié." 
-    };
-});
+        commandChunk.forEach((command, index) => {
+            message += `${i + index + 1}- ${command.name}\n`;
+            message += `   ✅ Description 👉: ${command.description}\n`;
+            message += `   ✅ Usage 👉: ${command.usage}\n\n`;
+        });
 
-const COMMANDS_PER_PAGE = 10;
+        await sendMessage(senderId, message);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Attente de 1 seconde avant l'envoi du prochain bloc
+    }
+}
 
-const helpCommand = async (senderId, commandPrompt) => {
-    const totalPages = Math.ceil(commandsList.length / COMMANDS_PER_PAGE);
-    let page = parseInt(commandPrompt, 10) || 1;
+module.exports = async (senderId) => {
+    try {
+        const commandsDir = path.join(__dirname);
+        const commandFiles = fs.readdirSync(commandsDir).filter(file => file.endsWith('.js'));
+        
+        // Charger les informations de chaque commande
+        const commands = commandFiles.map(file => require(`./${file}`).info);
 
-    if (page < 1) page = 1;
-    if (page > totalPages) page = totalPages;
-
-    const startIndex = (page - 1) * COMMANDS_PER_PAGE;
-    const endIndex = startIndex + COMMANDS_PER_PAGE;
-    const commandsToShow = commandsList.slice(startIndex, endIndex);
-
-    let message = `🇲🇬 *Liste des commandes disponibles (Page ${page}/${totalPages})* :\n\n`;
-    commandsToShow.forEach((cmd, index) => {
-        message += `${startIndex + index + 1}- ${cmd.name}\n   ✅ Description 👉: ${cmd.description}\n   ✅ Usage 👉: ${cmd.usage}\n\n`;
-    });
-
-    message += `📄 Page (${page}/${totalPages})\nUtilisez 'help <numéro de page>' pour naviguer.`;
-
-    await sendMessage(senderId, message);
+        await sendCommandsInChunks(senderId, commands);
+    } catch (error) {
+        console.error('Erreur dans la commande help :', error);
+        await sendMessage(senderId, 'Désolé, une erreur est survenue lors de l\'exécution de la commande help.');
+    }
 };
 
-module.exports = helpCommand;
+// Ajouter les informations de la commande
+module.exports.info = {
+    name: "help",
+    description: "Affiche la liste complète des commandes disponibles en les envoyant par blocs.",
+    usage: "Envoyez 'help' pour voir la liste complète des commandes par blocs."
+};
