@@ -65,3 +65,8 @@ module.exports = async (senderId, prompt) => {
         await sendMessage(senderId, "🚨 Oups ! Une erreur est survenue. Réessaie plus tard !");
     }
 };
+module.exports.info = {
+    name: "hira",
+    description: "Obtiens la liste des chansons d'un artiste et écoute leurs paroles.",
+    usage: "Envoyez 'hira <nom de l'artiste>' pour voir la liste des chansons.\nPuis, envoyez un numéro pour voir les paroles et écouter la chanson.\nEnvoyez 'stop' pour terminer la session."
+};
