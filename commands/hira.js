@@ -3,6 +3,15 @@ const sendMessage = require('../handles/sendMessage');
 
 let userSessions = {}; // Stocke les sessions des utilisateurs
 
+// Fonction pour découper le texte en morceaux de 2000 caractères
+function chunkText(text, maxLength = 2000) {
+    let chunks = [];
+    for (let i = 0; i < text.length; i += maxLength) {
+        chunks.push(text.substring(i, i + maxLength));
+    }
+    return chunks;
+}
+
 module.exports = async (senderId, prompt) => { 
     try {
         const [command, ...args] = prompt.trim().split(/\s+/);
@@ -35,7 +44,14 @@ module.exports = async (senderId, prompt) => {
             const { titre, paroles, mp3 } = lyricsResponse.data;
             const lyricsText = paroles.join("\n");
 
-            await sendMessage(senderId, `✅ *Titre* : ${titre} (${artist})\n🇲🇬 *Paroles* 👉\n${lyricsText}`);
+            // Découper et envoyer les paroles en plusieurs morceaux
+            const lyricsChunks = chunkText(lyricsText, 2000);
+            await sendMessage(senderId, `✅ *Titre* : ${titre} (${artist})\n🇲🇬 *Paroles* 👉`);
+
+            for (let chunk of lyricsChunks) {
+                await sendMessage(senderId, chunk);
+            }
+
             await sendMessage(senderId, { attachment: { type: "audio", payload: { url: mp3 } } });
 
             return;
@@ -65,6 +81,7 @@ module.exports = async (senderId, prompt) => {
         await sendMessage(senderId, "🚨 Oups ! Une erreur est survenue. Réessaie plus tard !");
     }
 };
+
 module.exports.info = {
     name: "hira",
     description: "Obtiens la liste des chansons d'un artiste et écoute leurs paroles.",
