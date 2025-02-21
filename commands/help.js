@@ -23,7 +23,7 @@ async function sendCommandsInChunks(senderId, commands, page = 1) {
     await sendMessage(senderId, message);
 }
 
-module.exports = async (senderId, args = []) => {
+module.exports = async (senderId, page = 1) => {
     try {
         const commandsDir = path.join(__dirname, 'commands'); // Diriger vers le répertoire contenant les commandes
         const commandFiles = fs.readdirSync(commandsDir).filter(file => file.endsWith('.js'));
@@ -33,13 +33,6 @@ module.exports = async (senderId, args = []) => {
 
         // Vérifier la validité de la page
         const totalPages = Math.ceil(commands.length / MAX_COMMANDS_PER_MESSAGE);
-        let page = 1;
-
-        if (args.length > 0 && !isNaN(args[0])) {
-            page = Math.max(1, Math.min(parseInt(args[0]), totalPages));
-        }
-
-        // Vérifier la validité de la page
         if (page < 1 || page > totalPages) {
             return sendMessage(senderId, `Page invalide. Veuillez choisir une page entre 1 et ${totalPages}.`);
         }
