@@ -1,53 +1,37 @@
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const sendMessage = require('../handles/sendMessage');
-const MAX_COMMANDS_PER_MESSAGE = 10; // Nombre maximum de commandes par message
 
-// Fonction pour envoyer chaque bloc de messages avec un délai d'attente
-async function sendCommandsInChunks(senderId, commands, page = 1) {
-    const startIndex = (page - 1) * MAX_COMMANDS_PER_MESSAGE;
-    const endIndex = startIndex + MAX_COMMANDS_PER_MESSAGE;
-    const commandChunk = commands.slice(startIndex, endIndex);
-    let message = "🇲🇬 *Liste des commandes disponibles :*\n\n";
+const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
+const commands = commandFiles.map(file => file.replace('.js', ''));
 
-    commandChunk.forEach((command, index) => {
-        message += `${startIndex + index + 1}- ${command.name}\n`;
-        message += `   ✅ Description 👉: ${command.description}\n`;
-        message += `   ✅ Usage 👉: ${command.usage}\n\n`;
+const COMMANDS_PER_PAGE = 10;
+
+module.exports = async (senderId, userText) => {
+    const page = parseInt(userText.split(' ')[1]) || 1;
+    const totalPages = Math.ceil(commands.length / COMMANDS_PER_PAGE);
+    
+    if (page < 1 || page > totalPages) {
+        await sendMessage(senderId, `Page invalide. Veuillez choisir une page entre 1 et ${totalPages}.`);
+        return;
+    }
+
+    const startIndex = (page - 1) * COMMANDS_PER_PAGE;
+    const endIndex = startIndex + COMMANDS_PER_PAGE;
+    const commandList = commands.slice(startIndex, endIndex);
+
+    let response = "🇲🇬 *Liste des commandes disponibles :*\n\n";
+    commandList.forEach((cmd, index) => {
+        response += `${startIndex + index + 1}- ${cmd}\n   ✅ Description 👉: Description de la commande ${cmd}.\n   ✅ Usage 👉: Envoyez '${cmd}' pour l'utiliser.\n\n`;
     });
 
-    // Ajouter un message de navigation entre les pages
-    const totalPages = Math.ceil(commands.length / MAX_COMMANDS_PER_MESSAGE);
-    message += `Page ${page}/${totalPages}\nUtilisez -help <numéro de page> pour naviguer.`;
-
-    await sendMessage(senderId, message);
-}
-
-module.exports = async (senderId, page = 1) => {
-    try {
-        const commandsDir = path.join(__dirname, 'commands'); // Diriger vers le répertoire contenant les commandes
-        const commandFiles = fs.readdirSync(commandsDir).filter(file => file.endsWith('.js'));
-        
-        // Charger les informations de chaque commande
-        const commands = commandFiles.map(file => require(path.join(commandsDir, file)).info);
-
-        // Vérifier la validité de la page
-        const totalPages = Math.ceil(commands.length / MAX_COMMANDS_PER_MESSAGE);
-        if (page < 1 || page > totalPages) {
-            return sendMessage(senderId, `Page invalide. Veuillez choisir une page entre 1 et ${totalPages}.`);
-        }
-
-        // Envoyer les commandes par blocs
-        await sendCommandsInChunks(senderId, commands, page);
-    } catch (error) {
-        console.error('Erreur dans la commande help :', error);
-        await sendMessage(senderId, 'Désolé, une erreur est survenue lors de l\'exécution de la commande help.');
-    }
+    response += `Page ${page}/${totalPages}\nUtilisez 'help <numéro de page>' pour naviguer.`;
+    
+    await sendMessage(senderId, response);
 };
 
-// Ajouter les informations de la commande help
 module.exports.info = {
     name: "help",
-    description: "Affiche la liste complète des commandes disponibles en les envoyant par blocs.",
-    usage: "Envoyez 'help' pour voir la liste complète des commandes par blocs."
+    description: "Affiche la liste des commandes disponibles avec pagination.",
+    usage: "Envoyez 'help' pour voir les premières commandes ou 'help <numéro de page>' pour naviguer."
 };
