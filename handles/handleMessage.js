@@ -100,12 +100,14 @@ const handleMessage = async (event, api) => {
     const userText = message.text.trim().toLowerCase();
 
     // Si une commande persistante est active pour cet utilisateur
-    if (activeCommands[senderId] && activeCommands[senderId] !== 'help') {
-        const activeCommand = activeCommands[senderId];
-        console.log(`Commande persistante en cours pour ${senderId}: ${activeCommand}`);
-        await commands[activeCommand](senderId, userText);
-        return;
-    }
+    if (commandName === 'help') {
+    // La commande help est exécutée mais ne devient pas persistante
+    const commandPrompt = userText.replace(commandName, '').trim(); // Récupère le numéro de page de la commande
+    await commands[commandName](senderId, commandPrompt); // Passe aussi le prompt à la commande
+    activeCommands[senderId] = null; // Désactivation automatique
+    return;
+}
+
 
     // Détecter et exécuter une commande
     for (const commandName in commands) {
