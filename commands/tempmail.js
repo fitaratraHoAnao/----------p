@@ -38,20 +38,20 @@ module.exports = async (senderId, prompt) => {
             const inboxResponse = await axios.get(inboxUrl);
             const emails = inboxResponse.data.emails;
 
-            // Construire la réponse
-            let reply = `📥 **Boîte de réception pour** ${prompt} :\n\n`;
-
-            if (emails.length > 0) {
-                const lastEmail = emails[0];
-                reply += `📨 **Dernier message reçu :**\n`;
-                reply += `👤 **Expéditeur :** ${lastEmail.from}\n`;
-                reply += `📌 **Objet :** ${lastEmail.subject}\n`;
-                reply += `📄 **Message :**\n${lastEmail.body.substring(0, 300)}...\n\n📎 *Voir l'email complet dans ta boîte de réception.*`;
-            } else {
-                reply += "🚫 Aucun message reçu pour le moment. Reviens plus tard !";
+            if (emails.length === 0) {
+                return await sendMessage(senderId, "🚫 Aucun message reçu pour le moment. Reviens plus tard !");
             }
 
-            await sendMessage(senderId, reply);
+            // Envoyer les messages un par un avec un délai
+            for (const email of emails) {
+                let reply = `📨 **Nouveau message reçu !**\n`;
+                reply += `👤 **Expéditeur :** ${email.from}\n`;
+                reply += `📌 **Objet :** ${email.subject}\n`;
+                reply += `📄 **Message :**\n${email.body.substring(0, 300)}...\n\n📎 *Voir l'email complet dans ta boîte de réception.*`;
+
+                await sendMessage(senderId, reply);
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Pause de 2 secondes entre chaque message
+            }
         } 
         else {
             await sendMessage(senderId, "🤔 Je ne comprends pas ta demande. Tape 'create' pour générer un email temporaire.");
