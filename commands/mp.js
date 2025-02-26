@@ -67,7 +67,7 @@ module.exports = async (senderId, prompt) => {
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "audiot",  // Nouveau nom de la commande
+    name: "mp",  // Nouveau nom de la commande
     description: "Permet de rechercher des chansons audio par page et d'envoyer des fichiers audio en pièce jointe.",  // Nouvelle description
-    usage: "Envoyez 'audiot <numéro de page>' pour obtenir une liste de chansons avec leurs fichiers audio en pièce jointe."  // Nouveau format d'usage
+    usage: "Envoyez 'mp <numéro de page>' pour obtenir une liste de chansons avec leurs fichiers audio en pièce jointe."  // Nouveau format d'usage
 };
