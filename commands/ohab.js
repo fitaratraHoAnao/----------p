@@ -44,7 +44,7 @@ module.exports = async (senderId, prompt, uid) => {
             userStates[senderId] = { query: query, currentPage: 1 };
 
             // Effectuer la requête pour la première page
-            const response = await axios.get(`https://api-test-one-brown.vercel.app/fitadiavana?ohabolana=${encodeURIComponent(query)}&page=1`);
+            const response = await axios.get(`https://api-test-liart-alpha.vercel.app/fitadiavana?ohabolana=${encodeURIComponent(query)}&page=1`);
             
             const data = response.data;
 
