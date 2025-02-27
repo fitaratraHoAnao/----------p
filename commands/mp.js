@@ -1,65 +1,63 @@
-const axios = require('axios');
-const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
+const axios = require("axios");
+const express = require("express");
+const app = express();
+const PORT = 3000;
 
-// Stocker l'état des pages pour chaque utilisateur
-const userSessions = {};
+let userSessions = {}; // Stocke les pages en cours pour chaque utilisateur
 
-module.exports = async (senderId, prompt, uid) => { 
+// Fonction pour récupérer les données de l'API
+async function fetchProverbs(query, page) {
     try {
-        // Initialiser la session utilisateur si elle n'existe pas
-        if (!userSessions[senderId]) {
-            userSessions[senderId] = { prompt, page: 1 };
-        }
-
-        const { prompt: storedPrompt, page } = userSessions[senderId];
-
-        // Envoyer un message d'attente
-        await sendMessage(senderId, `✨📜 Recherche des proverbes pour : "${storedPrompt}" (Page ${page})... ⌛`);
-
-        // Construire l'URL de l'API avec la recherche et la page actuelle
-        const apiUrl = `https://api-test-one-brown.vercel.app/fitadiavana?ohabolana=${encodeURIComponent(prompt)}&page=1`;
-        const response = await axios.get(apiUrl);
-
-        // Vérifier si des résultats sont disponibles
-        if (!response.data.results || response.data.results.length === 0) {
-            return await sendMessage(senderId, "❌ Aucun proverbe trouvé pour cette page !");
-        }
-
-        const results = response.data.results; // Liste des proverbes
-        const chunkSize = 10; // Nombre de proverbes envoyés par message
-
-        // Découper la liste des résultats en morceaux de 3 et les envoyer successivement
-        for (let i = 0; i < results.length; i += chunkSize) {
-            const chunk = results.slice(i, i + chunkSize).join("\n\n"); // Joindre les proverbes par saut de ligne
-
-            // Envoyer le message avec un délai de 2 secondes entre chaque envoi
-            await sendMessage(senderId, chunk);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-
-        // Indiquer comment voir la page suivante
-        await sendMessage(senderId, "🔹 Tape un numéro (ex: 2) pour voir la page suivante.");
-
+        const url = `https://api-test-one-brown.vercel.app/fitadiavana?ohabolana=${query}&page=${page}`;
+        const response = await axios.get(url);
+        return response.data;
     } catch (error) {
-        console.error("Erreur lors de l'appel à l'API des proverbes:", error);
-
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "🚨 Oups ! Une erreur est survenue lors du traitement de ta demande. Réessaie plus tard ! 📜");
+        console.error("Erreur lors de la récupération des données :", error);
+        return null;
     }
-};
+}
 
-// Gérer la demande de pages suivantes
-module.exports.handleMessage = async (senderId, message) => {
-    if (userSessions[senderId] && !isNaN(message)) {
-        userSessions[senderId].page = parseInt(message);
-        await module.exports(senderId, userSessions[senderId].prompt);
+// Fonction pour afficher les résultats
+function formatProverbs(results) {
+    return results
+        .map((proverb, index) => `${index + 1}. ${proverb}`)
+        .join("\n");
+}
+
+// Route pour gérer les messages des utilisateurs
+app.get("/message", async (req, res) => {
+    const userId = req.query.userId || "defaultUser";
+    const message = req.query.text;
+
+    if (!userSessions[userId]) {
+        userSessions[userId] = { query: "omby", page: 1 }; // Défaut : page 1
     }
-};
 
-// Ajouter les informations de la commande
-module.exports.info = {
-    name: "mp",  // Le nom de la commande mis à jour
-    description: "Recherche des proverbes malgaches en fonction de ton mot-clé.",  
-    usage: "Envoyez 'mp <mot-clé>' pour obtenir des proverbes liés à votre recherche. Tape un numéro (ex: 2) pour voir la page suivante."
-};
-        
+    let { query, page } = userSessions[userId];
+
+    // Vérifie si l'utilisateur tape un numéro de page
+    const requestedPage = parseInt(message);
+    if (!isNaN(requestedPage)) {
+        page = requestedPage; // Met à jour la page demandée
+        userSessions[userId].page = page;
+    }
+
+    // Récupère les proverbes de l'API
+    const data = await fetchProverbs(query, page);
+    if (!data || !data.results) {
+        return res.send("Erreur : Impossible de récupérer les données.");
+    }
+
+    // Formate et envoie la réponse
+    let responseText = formatProverbs(data.results);
+    if (data.nextPage) {
+        responseText += `\n\n🔹 Tape un numéro (ex: ${page + 1}) pour voir la page suivante.`;
+    }
+
+    res.send(responseText);
+});
+
+// Démarrer le serveur
+app.listen(PORT, () => {
+    console.log(`Serveur en ligne sur http://localhost:${PORT}`);
+});
