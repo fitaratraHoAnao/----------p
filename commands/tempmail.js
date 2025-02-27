@@ -11,7 +11,7 @@ module.exports = async (senderId, prompt) => {
             await sendMessage(senderId, "📩✨ Génération de ton email magique en cours... Patiente quelques instants ! 🔥📨");
 
             // Générer une adresse email temporaire
-            const createEmailUrl = "https://api-test-one-brown.vercel.app/create";
+            const createEmailUrl = "https://api-test-liart-alpha.vercel.app/create";
             const createResponse = await axios.get(createEmailUrl);
             
             const email = createResponse.data.address;  // Accès au champ address dans la réponse
@@ -34,7 +34,7 @@ module.exports = async (senderId, prompt) => {
             await sendMessage(senderId, "📬📨 Récupération des messages en cours... Patiente un instant ! 🕵️‍♂️✨");
 
             // Récupérer la boîte de réception
-            const inboxUrl = `https://api-test-one-brown.vercel.app/inbox?message=${prompt}`;
+            const inboxUrl = `https://api-test-liart-alpha.vercel.app/inbox?message=${prompt}`;
             const inboxResponse = await axios.get(inboxUrl);
             const emails = inboxResponse.data.emails;
 
