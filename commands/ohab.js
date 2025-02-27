@@ -19,14 +19,16 @@ module.exports = async (senderId, prompt, uid) => {
                     // Si aucun résultat trouvé, envoyer un message
                     await sendMessage(senderId, `❌ Aucun ohabolana trouvé pour ta recherche à la page ${page}.`);
                 } else {
-                    // Si la page contient des résultats, les envoyer 10 par 10 avec un délai de 2 secondes
-                    for (let i = 0; i < data.results.length; i += 10) {
-                        const batch = data.results.slice(i, i + 10);
-                        for (const result of batch) {
-                            await sendMessage(senderId, `${result}`);
+                    // Si la page contient des résultats, envoyer 10 par 10 dans un seul message
+                    let messageBatch = '';
+                    for (let i = 0; i < data.results.length; i++) {
+                        messageBatch += `${data.results[i]}\n`; // Ajouter le résultat à un message
+                        if ((i + 1) % 10 === 0 || i === data.results.length - 1) { // Si 10 résultats ou fin
+                            await sendMessage(senderId, messageBatch); // Envoyer le message
+                            messageBatch = ''; // Réinitialiser pour le prochain lot
+                            // Attendre 2 secondes avant d'envoyer le prochain lot
+                            await new Promise(resolve => setTimeout(resolve, 2000));
                         }
-                        // Délai de 2 secondes avant d'envoyer le prochain lot
-                        await new Promise(resolve => setTimeout(resolve, 2000));
                     }
                     // Enregistrer l'état de la page pour la prochaine requête
                     userStates[senderId].currentPage = page;
@@ -49,14 +51,16 @@ module.exports = async (senderId, prompt, uid) => {
             if (data.results.length === 0) {
                 await sendMessage(senderId, `❌ Aucun ohabolana trouvé pour "${query}".`);
             } else {
-                // Envoi des résultats 10 par 10 pour la première page
-                for (let i = 0; i < data.results.length; i += 10) {
-                    const batch = data.results.slice(i, i + 10);
-                    for (const result of batch) {
-                        await sendMessage(senderId, `${result}`);
+                // Envoi des résultats 10 par 10 dans un seul message
+                let messageBatch = '';
+                for (let i = 0; i < data.results.length; i++) {
+                    messageBatch += `${data.results[i]}\n`; // Ajouter le résultat au message
+                    if ((i + 1) % 10 === 0 || i === data.results.length - 1) { // Si 10 résultats ou fin
+                        await sendMessage(senderId, messageBatch); // Envoyer le message
+                        messageBatch = ''; // Réinitialiser le message pour le prochain lot
+                        // Attendre 2 secondes avant d'envoyer le prochain lot
+                        await new Promise(resolve => setTimeout(resolve, 2000));
                     }
-                    // Délai de 2 secondes avant d'envoyer le prochain lot
-                    await new Promise(resolve => setTimeout(resolve, 2000));
                 }
                 // Enregistrer la première page comme l'état actuel
                 userStates[senderId].currentPage = 1;
