@@ -12,7 +12,7 @@ module.exports = async (senderId, prompt, uid) => {
 
             if (userStates[senderId] && userStates[senderId].query) {
                 // Effectuer la requête pour la page demandée
-                const response = await axios.get(`https://api-test-one-brown.vercel.app/fitadiavana?ohabolana=${encodeURIComponent(userStates[senderId].query)}&page=${page}`);
+                const response = await axios.get(`https://api-test-liart-alpha.vercel.app/fitadiavana?ohabolana=${encodeURIComponent(userStates[senderId].query)}&page=${page}`);
 
                 const data = response.data;
                 if (data.results.length === 0) {
