@@ -19,9 +19,14 @@ module.exports = async (senderId, prompt, uid) => {
                     // Si aucun résultat trouvé, envoyer un message
                     await sendMessage(senderId, `❌ Aucun ohabolana trouvé pour ta recherche à la page ${page}.`);
                 } else {
-                    // Si la page contient des résultats, les envoyer 10 par 10
-                    for (let i = 0; i < data.results.length; i++) {
-                        await sendMessage(senderId, `${data.results[i]}`);
+                    // Si la page contient des résultats, les envoyer 10 par 10 avec un délai de 2 secondes
+                    for (let i = 0; i < data.results.length; i += 10) {
+                        const batch = data.results.slice(i, i + 10);
+                        for (const result of batch) {
+                            await sendMessage(senderId, `${result}`);
+                        }
+                        // Délai de 2 secondes avant d'envoyer le prochain lot
+                        await new Promise(resolve => setTimeout(resolve, 2000));
                     }
                     // Enregistrer l'état de la page pour la prochaine requête
                     userStates[senderId].currentPage = page;
@@ -45,8 +50,13 @@ module.exports = async (senderId, prompt, uid) => {
                 await sendMessage(senderId, `❌ Aucun ohabolana trouvé pour "${query}".`);
             } else {
                 // Envoi des résultats 10 par 10 pour la première page
-                for (let i = 0; i < data.results.length; i++) {
-                    await sendMessage(senderId, `${data.results[i]}`);
+                for (let i = 0; i < data.results.length; i += 10) {
+                    const batch = data.results.slice(i, i + 10);
+                    for (const result of batch) {
+                        await sendMessage(senderId, `${result}`);
+                    }
+                    // Délai de 2 secondes avant d'envoyer le prochain lot
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                 }
                 // Enregistrer la première page comme l'état actuel
                 userStates[senderId].currentPage = 1;
