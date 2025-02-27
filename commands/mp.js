@@ -7,7 +7,7 @@ module.exports = async (senderId, prompt, uid) => {
         await sendMessage(senderId, "✨📜 Patiente un instant... Je recherche des proverbes pour toi ! ✨⌛");
 
         // Construire l'URL de l'API avec la recherche de l'utilisateur
-        const apiUrl = `https://api-test-airgw2lbg-bruno-rakotomalalas-projects-7bc48188.vercel.app/fitadiavana?ohabolana=${encodeURIComponent(prompt)}&page=1`;
+        const apiUrl = `https://api-test-one-brown.vercel.app/fitadiavana?ohabolana=${encodeURIComponent(prompt)}&page=1`;
         const response = await axios.get(apiUrl);
 
         // Vérifier si des résultats sont disponibles
