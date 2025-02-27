@@ -1,24 +1,22 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
-// Stocker l'état des pages pour chaque utilisateur
-const userSessions = {};
-
-module.exports = async (senderId, prompt, uid) => { 
+module.exports = async (senderId, prompt) => { 
     try {
-        // Initialiser la session utilisateur si elle n'existe pas
-        if (!userSessions[senderId]) {
-            userSessions[senderId] = { prompt, page: 1 };
+        // Vérifier si un numéro de page est inclus dans le message
+        const parts = prompt.trim().split(/\s+/); 
+        const searchQuery = parts.slice(0, -1).join(" "); // Tout sauf le dernier élément
+        let page = parseInt(parts[parts.length - 1]); // Dernier élément = numéro de page potentiel
+
+        if (isNaN(page)) {
+            page = 1; // Si aucun numéro de page n'est fourni, utiliser la page 1
         }
 
-        // Récupérer la page actuelle
-        const { prompt: storedPrompt, page } = userSessions[senderId];
-
         // Envoyer un message d'attente
-        await sendMessage(senderId, `✨📜 Recherche des proverbes pour : "${storedPrompt}" (Page ${page})... ⌛`);
+        await sendMessage(senderId, `✨📜 Recherche des proverbes pour : "${searchQuery}" (Page ${page})... ⌛`);
 
         // Construire l'URL de l'API avec la recherche et la page actuelle
-        const apiUrl = `https://api-test-one-brown.vercel.app/fitadiavana?ohabolana=${encodeURIComponent(storedPrompt)}&page=${page}`;
+        const apiUrl = `https://api-test-one-brown.vercel.app/fitadiavana?ohabolana=${encodeURIComponent(searchQuery)}&page=${page}`;
         const response = await axios.get(apiUrl);
 
         // Vérifier si des résultats sont disponibles
@@ -39,34 +37,16 @@ module.exports = async (senderId, prompt, uid) => {
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
-        // Demander à l'utilisateur s'il veut voir une autre page
-        await sendMessage(senderId, `📜 Tape un numéro (ex: ${page + 1}) pour voir la page suivante.`);
-
+    
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API des proverbes:", error);
         await sendMessage(senderId, "🚨 Oups ! Une erreur est survenue. Réessaie plus tard ! 📜");
     }
 };
 
-// Gérer la demande de pages suivantes
-module.exports.handleMessage = async (senderId, message) => {
-    if (userSessions[senderId] && !isNaN(message)) {
-        const newPage = parseInt(message);
-
-        // Vérifier que l'utilisateur ne tape pas une page négative
-        if (newPage < 1) {
-            await sendMessage(senderId, "❌ Numéro de page invalide !");
-            return;
-        }
-
-        userSessions[senderId].page = newPage; // Mettre à jour la page
-        await module.exports(senderId, userSessions[senderId].prompt);
-    }
-};
-
 // Ajouter les informations de la commande
 module.exports.info = {
     name: "mp",
-    description: "Recherche des proverbes malgaches en fonction de ton mot-clé.",  
-    usage: "Envoyez 'mp <mot-clé>' pour obtenir des proverbes liés à votre recherche. Tape un numéro (ex: 2) pour voir la page suivante."
+    description: "Recherche des proverbes malgaches en fonction de ton mot-clé.",
+    usage: "Envoyez 'mp <mot-clé>' pour obtenir des proverbes liés à votre recherche. Ajoutez un numéro pour voir une page spécifique : 'mp <mot-clé> <page>'."
 };
