@@ -11,6 +11,7 @@ module.exports = async (senderId, prompt, uid) => {
             userSessions[senderId] = { prompt, page: 1 };
         }
 
+        // Récupérer la page actuelle
         const { prompt: storedPrompt, page } = userSessions[senderId];
 
         // Envoyer un message d'attente
@@ -22,11 +23,12 @@ module.exports = async (senderId, prompt, uid) => {
 
         // Vérifier si des résultats sont disponibles
         if (!response.data.results || response.data.results.length === 0) {
-            return await sendMessage(senderId, "❌ Aucun proverbe trouvé pour cette page !");
+            await sendMessage(senderId, `❌ Aucun proverbe trouvé pour la page ${page} !`);
+            return;
         }
 
         const results = response.data.results; // Liste des proverbes
-        const chunkSize = 15; // Nombre de proverbes envoyés par message
+        const chunkSize = 3; // Nombre de proverbes envoyés par message
 
         // Découper la liste des résultats en morceaux de 3 et les envoyer successivement
         for (let i = 0; i < results.length; i += chunkSize) {
@@ -37,33 +39,34 @@ module.exports = async (senderId, prompt, uid) => {
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
-        // Vérifier s'il y a une page suivante
-        if (response.data.nextPage) {
-            await sendMessage(senderId, `📜 Pour voir la page suivante, envoie un numéro (ex: ${page + 1}).`);
-        } else {
-            await sendMessage(senderId, "📌 Fin des résultats. Recommence avec un autre mot-clé si besoin.");
-        }
+        // Demander à l'utilisateur s'il veut voir une autre page
+        await sendMessage(senderId, `📜 Tape un numéro (ex: ${page + 1}) pour voir la page suivante.`);
 
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API des proverbes:", error);
-
-        // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "🚨 Oups ! Une erreur est survenue lors du traitement de ta demande. Réessaie plus tard ! 📜");
+        await sendMessage(senderId, "🚨 Oups ! Une erreur est survenue. Réessaie plus tard ! 📜");
     }
 };
 
 // Gérer la demande de pages suivantes
 module.exports.handleMessage = async (senderId, message) => {
     if (userSessions[senderId] && !isNaN(message)) {
-        userSessions[senderId].page = parseInt(message);
+        const newPage = parseInt(message);
+
+        // Vérifier que l'utilisateur ne tape pas une page négative
+        if (newPage < 1) {
+            await sendMessage(senderId, "❌ Numéro de page invalide !");
+            return;
+        }
+
+        userSessions[senderId].page = newPage; // Mettre à jour la page
         await module.exports(senderId, userSessions[senderId].prompt);
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "mp",  // Le nom de la commande mis à jour
+    name: "mp",
     description: "Recherche des proverbes malgaches en fonction de ton mot-clé.",  
     usage: "Envoyez 'mp <mot-clé>' pour obtenir des proverbes liés à votre recherche. Tape un numéro (ex: 2) pour voir la page suivante."
 };
-        
