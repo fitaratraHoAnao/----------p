@@ -40,7 +40,7 @@ const handleMessage = async (event, api) => {
     const message = event.message;
 
     // Message d'attente pendant le traitement
-    const typingMessage = "🇲🇬 🔄 Generating...🍟";
+    const typingMessage = "🇲🇬 🔍 Generating...🍏";
     await sendMessage(senderId, typingMessage);
     await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -66,37 +66,60 @@ const handleMessage = async (event, api) => {
                     }
                     imageHistory[senderId].push(imageUrl);
 
-                    // Utiliser l'API OCR pour analyser l'image
+                    // Message pour indiquer le traitement en cours
+                    await sendMessage(senderId, "🔍 Analyse de l'image en cours...");
+
+                    // Utiliser l'API OCR pour analyser l'image avec un timeout
                     const ocrResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
                         link: imageUrl,
                         prompt: "Analyse du texte de l'image pour détection de mots-clés",
                         customId: senderId
-                    });
+                    }, { timeout: 30000 }); // Timeout de 30 secondes
 
-                    const ocrText = ocrResponse.data.message || "";
+                    if (!ocrResponse.data || !ocrResponse.data.message) {
+                        throw new Error("Réponse OCR invalide");
+                    }
+
+                    const ocrText = ocrResponse.data.message;
                     const hasExerciseKeywords = detectExerciseKeywords(ocrText);
 
                     const prompt = hasExerciseKeywords
                         ? "Faire cet exercice et donner la correction complète de cet exercice"
                         : "Décrire cette photo";
 
+                    // Message pour indiquer que l'analyse est terminée et que la génération commence
+                    await sendMessage(senderId, "✅ Analyse terminée, génération de la réponse en cours...");
+
                     // Demander à l'API de décrire ou résoudre l'exercice
                     const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
                         link: imageUrl,
                         prompt,
                         customId: senderId
-                    });
+                    }, { timeout: 60000 }); // Timeout de 60 secondes
+
+                    if (!response.data || !response.data.message) {
+                        throw new Error("Réponse de l'API invalide");
+                    }
 
                     const reply = response.data.message;
-
-                    if (reply) {
-                        await sendLongMessage(senderId, `Bruno : voici ma suggestion de réponse pour cette image :\n${reply}`);
-                    } else {
-                        await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour l'image.");
-                    }
+                    await sendLongMessage(senderId, `Bruno : voici ma suggestion de réponse pour cette image :\n${reply}`);
                 } catch (error) {
-                    console.error('Erreur lors de l\'analyse de l\'image :', error.response ? error.response.data : error.message);
-                    await sendMessage(senderId, "Une erreur s'est produite lors de la description de l'image.");
+                    console.error('Erreur lors de l\'analyse de l\'image :', error);
+                    
+                    // Message d'erreur détaillé
+                    let errorMessage = "Une erreur s'est produite lors de la description de l'image.";
+                    
+                    if (error.code === 'ECONNABORTED') {
+                        errorMessage = "Le délai d'attente a été dépassé. Veuillez réessayer avec une image plus claire ou plus petite.";
+                    } else if (error.response) {
+                        errorMessage += ` (Code: ${error.response.status})`;
+                        console.error('Réponse d\'erreur:', error.response.data);
+                    }
+                    
+                    await sendMessage(senderId, errorMessage);
+                    
+                    // Message de suggestion
+                    await sendMessage(senderId, "Vous pouvez essayer de renvoyer l'image avec une meilleure qualité ou utiliser une commande texte à la place.");
                 }
             }
         } else {
