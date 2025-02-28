@@ -1,19 +1,34 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
+const dotenv = require('dotenv');
+const axios = require('axios');
+const multer = require('multer');
+
+// Charger les variables d'environnement
+dotenv.config();
+
+// Importation des modules existants
 const handleMessage = require('./handles/handleMessage');
 const handlePostback = require('./handles/handlePostback');
-require('dotenv').config();
-const axios = require('axios'); // Bibliothèque pour l'API
+const geminiRoutes = require('./pilot/gemini');
 
 const app = express();
 
-// Middleware
+// Configuration des middlewares
 app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Fonction pour envoyer une réaction (dépend de l'API que vous utilisez)
+// Configuration de multer pour le téléchargement de fichiers
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // Limite de 10MB
+});
+
+// API pour gérer les réactions
 const api = {
-    // Exemple d'API Graph Facebook pour envoyer une réaction
     setMessageReaction: async (reaction, messageID) => {
         try {
             const accessToken = process.env.FB_ACCESS_TOKEN;
@@ -30,10 +45,9 @@ const api = {
     }
 };
 
-// Route pour le webhook de Facebook
+// Route pour le webhook Facebook
 app.get('/webhook', (req, res) => {
     const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
-
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
@@ -48,7 +62,7 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-// Route pour recevoir les messages entrants
+// Route pour recevoir les messages entrants via Messenger
 app.post('/webhook', (req, res) => {
     const body = req.body;
 
@@ -56,7 +70,7 @@ app.post('/webhook', (req, res) => {
         body.entry.forEach(entry => {
             const event = entry.messaging[0];
             if (event.message) {
-                handleMessage(event, api);  // Passer `api` pour permettre les réactions
+                handleMessage(event, api); // Passer `api` pour permettre les réactions
             } else if (event.postback) {
                 handlePostback(event);
             }
@@ -67,16 +81,16 @@ app.post('/webhook', (req, res) => {
     }
 });
 
-// Servir le répertoire public
-app.use(express.static(path.join(__dirname, 'public')));
+// Routes pour l'API Gemini
+app.use('/gemini', geminiRoutes);
 
-// Route pour la page d'accueil
+// Route par défaut
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Démarrer le serveur
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Serveur démarré sur http://0.0.0.0:${PORT}`);
 });
