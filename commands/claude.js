@@ -1,17 +1,33 @@
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
+// Stockage de l'historique des messages
+let conversations = {}; 
+
 module.exports = async (senderId, prompt, uid) => { 
     try {
+        // Initialiser l'historique de la conversation si ce n'est pas encore fait
+        if (!conversations[senderId]) {
+            conversations[senderId] = [];
+        }
+
+        // Ajouter le prompt de l'utilisateur à l'historique
+        conversations[senderId].push({ role: 'user', content: prompt });
+
         // Envoyer un message d'attente magnifique avec des emojis
         await sendMessage(senderId, "✨🤖 Un instant magique... Je prépare une réponse éclairée pour toi ! ✨⌛");
 
         // Construire l'URL de l'API pour résoudre la question
-        const apiUrl = `https://slogan-api.onrender.com/api/ai?model=claude-3-sonnet-20240229&system=You%20are%20a%20helpful%20assistant&question=${encodeURIComponent(prompt)}`;
-        const response = await axios.get(apiUrl);
+        const apiUrl = `http://sgp1.hmvhostings.com:25743/claude?message=${encodeURIComponent(prompt)}`;
 
+        // Appel à l'API de Claude
+        const response = await axios.get(apiUrl);
+        
         // Récupérer la réponse de l'API
-        const reply = response.data.response;
+        const reply = response.data.claude[0].text;
+
+        // Ajouter la réponse de Claude à l'historique
+        conversations[senderId].push({ role: 'assistant', content: reply });
 
         // Attendre 2 secondes avant d'envoyer la réponse
         await new Promise(resolve => setTimeout(resolve, 2000));
