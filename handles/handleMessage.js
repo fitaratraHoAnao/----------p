@@ -7,7 +7,7 @@ const axios = require('axios');
 const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
 const commands = {};
 
-// 脡tat de pagination global pour 锚tre accessible dans ce module
+// 状态 de pagination global pour être accessible dans ce module
 const userPaginationStates = {};
 
 // Charger les commandes dans un objet
@@ -15,21 +15,21 @@ for (const file of commandFiles) {
     const commandName = file.replace('.js', '');
     commands[commandName] = require(`../commands/${file}`);
 
-    // Si c'est la commande help, r茅cup茅rer son 茅tat de pagination
+    // Si c'est la commande help, récupérer son état de pagination
     if (commandName === 'help' && commands[commandName].userPaginationStates) {
         Object.assign(userPaginationStates, commands[commandName].userPaginationStates);
     }
 }
 
-console.log('Les commandes suivantes ont 茅t茅 charg茅es :', Object.keys(commands));
+console.log('Les commandes suivantes ont été chargées :', Object.keys(commands));
 
 const activeCommands = {};
 const imageHistory = {};
-const MAX_MESSAGE_LENGTH = 2000; // Limite de caract猫res pour chaque message envoy茅
+const MAX_MESSAGE_LENGTH = 2000; // Limite de caractères pour chaque message envoyé
 
-// Fonction pour envoyer des messages longs en plusieurs parties si n茅cessaire
+// Fonction pour envoyer des messages longs en plusieurs parties si nécessaire
 async function sendLongMessage(senderId, message) {
-    const MAX_MESSAGE_LENGTH = 2000; // Limite de caract猫res par message Facebook
+    const MAX_MESSAGE_LENGTH = 2000; // Limite de caractères par message Facebook
     
     if (message.length <= MAX_MESSAGE_LENGTH) {
         // Si le message est assez court, l'envoyer directement
@@ -45,7 +45,7 @@ async function sendLongMessage(senderId, message) {
     }
 }
 
-// Fonction pour d茅tecter les mots-cl茅s d'exercice
+// Fonction pour détecter les mots-clés d'exercice
 function detectExerciseKeywords(text) {
     const keywords = ["calculer", "exercices", "1)", "2)", "3)", "a)", "b)", "c)", "d)", "?"];
     return keywords.some(keyword => text.toLowerCase().includes(keyword));
@@ -57,18 +57,18 @@ const handleMessage = async (event, api) => {
     const message = event.message;
 
     // Message d'attente simple sans bloquer le traitement
-    const typingMessage = "馃嚥馃嚞 馃攧 Generating...";
+    const typingMessage = "🇲🇬 ⏳ Generating...";
     sendMessage(senderId, typingMessage).catch(err => console.error("Erreur lors de l'envoi du message d'attente:", err));
-    // Pas de d茅lai suppl茅mentaire pour ne pas bloquer le traitement
+    // Pas de délai supplémentaire pour ne pas bloquer le traitement
 
-    // Commande "stop" pour d茅sactiver toutes les commandes persistantes
+    // Commande "stop" pour désactiver toutes les commandes persistantes
     if (message.text && message.text.toLowerCase() === 'stop') {
         activeCommands[senderId] = null;
-        await sendMessage(senderId, "Toutes les commandes sont d茅sactiv茅es. Vous pouvez maintenant envoyer d'autres messages.");
+        await sendMessage(senderId, "Toutes les commandes sont désactivées. Vous pouvez maintenant envoyer d'autres messages.");
         return;
     }
 
-    // Si des pi猫ces jointes sont envoy茅es, g茅rer les images
+    // Si des pièces jointes sont envoyées, gérer les images
     if (message.attachments && message.attachments.length > 0) {
         const imageAttachments = message.attachments.filter(attachment => attachment.type === 'image');
 
@@ -77,7 +77,7 @@ const handleMessage = async (event, api) => {
                 const imageUrl = image.payload.url;
 
                 try {
-                    // Historique des images envoy茅es par l'utilisateur
+                    // Historique des images envoyées par l'utilisateur
                     if (!imageHistory[senderId]) {
                         imageHistory[senderId] = [];
                     }
@@ -86,7 +86,7 @@ const handleMessage = async (event, api) => {
                     // Utiliser l'API OCR pour analyser l'image
                     const ocrResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
                         link: imageUrl,
-                        prompt: "Analyse du texte de l'image pour d茅tection de mots-cl茅s",
+                        prompt: "Analyse du texte de l'image pour détection de mots-clés",
                         customId: senderId
                     });
 
@@ -94,10 +94,10 @@ const handleMessage = async (event, api) => {
                     const hasExerciseKeywords = detectExerciseKeywords(ocrText);
 
                     const prompt = hasExerciseKeywords
-                        ? "Faire cet exercice et donner la correction compl猫te de cet exercice"
-                        : "D茅crire cette photo";
+                        ? "Faire cet exercice et donner la correction complète de cet exercice"
+                        : "Décrire cette photo";
 
-                    // Demander 脿 l'API de d茅crire ou r茅soudre l'exercice
+                    // Demander à l'API de décrire ou résoudre l'exercice
                     const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
                         link: imageUrl,
                         prompt,
@@ -107,9 +107,9 @@ const handleMessage = async (event, api) => {
                     const reply = response.data.message;
 
                     if (reply) {
-                        await sendLongMessage(senderId, `Bruno : voici ma suggestion de r茅ponse pour cette image :\n${reply}`);
+                        await sendLongMessage(senderId, `Bruno : voici ma suggestion de réponse pour cette image :\n${reply}`);
                     } else {
-                        await sendMessage(senderId, "Je n'ai pas re莽u de r茅ponse valide pour l'image.");
+                        await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour l'image.");
                     }
                 } catch (error) {
                     console.error('Erreur lors de l\'analyse de l\'image :', error.response ? error.response.data : error.message);
@@ -117,7 +117,7 @@ const handleMessage = async (event, api) => {
                 }
             }
         } else {
-            await sendMessage(senderId, "Aucune image n'a 茅t茅 trouv茅e dans le message.");
+            await sendMessage(senderId, "Aucune image n'a été trouvée dans le message.");
         }
         return;
     }
@@ -126,9 +126,9 @@ const handleMessage = async (event, api) => {
     const userText = message.text.trim();
     const userTextLower = userText.toLowerCase();
 
-    // V茅rifier d'abord si l'utilisateur est en mode pagination pour help
+    // Vérifier d'abord si l'utilisateur est en mode pagination pour help
     if (userPaginationStates[senderId] && userPaginationStates[senderId].isActive) {
-        // Passer le texte 脿 la commande help pour la navigation
+        // Passer le texte à la commande help pour la navigation
         await commands['help'](senderId, userText);
         return;
     }
@@ -141,16 +141,16 @@ const handleMessage = async (event, api) => {
         return;
     }
 
-    // D茅tecter et ex茅cuter une commande
+    // Détecter et exécuter une commande
     for (const commandName in commands) {
         if (userTextLower.startsWith(commandName)) {
-            console.log(`Commande d茅tect茅e : ${commandName}`);
+            console.log(`Commande détectée : ${commandName}`);
             const commandPrompt = userText.replace(commandName, '').trim();
 
             if (commandName === 'help') {
-                // La commande help est ex茅cut茅e avec les arguments fournis
+                // La commande help est exécutée avec les arguments fournis
                 await commands[commandName](senderId, commandPrompt);
-                activeCommands[senderId] = null; // D茅sactivation automatique
+                activeCommands[senderId] = null; // Désactivation automatique
                 return;
             } else {
                 // Activer une commande persistante
@@ -161,7 +161,7 @@ const handleMessage = async (event, api) => {
         }
     }
 
-    // Si aucune commande n'est active ou d茅tect茅e, utiliser Gemini pour traiter le texte
+    // Si aucune commande n'est active ou détectée, utiliser Gemini pour traiter le texte
     const prompt = message.text;
     const customId = senderId;
 
@@ -173,8 +173,8 @@ const handleMessage = async (event, api) => {
         const reply = response.data.message;
         await sendLongMessage(senderId, reply);
     } catch (error) {
-        console.error('Erreur lors de l\'appel 脿 l\'API :', error);
-        await sendMessage(senderId, 'D茅sol茅, une erreur s\'est produite lors du traitement de votre message.');
+        console.error('Erreur lors de l\'appel à l\'API :', error);
+        await sendMessage(senderId, 'Désolé, une erreur s\'est produite lors du traitement de votre message.');
     }
 };
 
