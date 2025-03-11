@@ -1,22 +1,41 @@
 const axios = require('axios');
-const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
+const fs = require('fs');
+const path = require('path');
+const sendMessage = require('../handles/sendMessage');
 
 module.exports = async (senderId, prompt) => { 
     try {
         // Envoyer un message de confirmation que le message a été reçu
         await sendMessage(senderId, "Message reçu, je génère votre image...");
 
+        // Vérifier si le prompt est vide
+        if (!prompt || prompt.trim() === '') {
+            prompt = 'fille'; // valeur par défaut
+        }
+
         // Construire l'URL de l'API pour générer une image
         const apiUrl = `https://kaiz-apis.gleeze.com/api/text2image?prompt=${encodeURIComponent(prompt)}`;
         
         console.log(`Appel API avec l'URL: ${apiUrl}`);
         
-        const response = await axios.get(apiUrl);
+        // Configurer la réponse pour recevoir les données binaires
+        const response = await axios({
+            method: 'get',
+            url: apiUrl,
+            responseType: 'arraybuffer'
+        });
 
-        // Récupérer l'URL de l'image dans la réponse de l'API
-        const imageUrl = response.data.image_url;
+        // Créer le dossier temp s'il n'existe pas
+        const tempDir = path.join(__dirname, '../temp');
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        // Sauvegarder l'image reçue
+        const imagePath = path.join(tempDir, `image_${Date.now()}.jpg`);
+        fs.writeFileSync(imagePath, response.data);
         
-        console.log(`Image générée: ${imageUrl}`);
+        console.log(`Image sauvegardée: ${imagePath}`);
 
         // Attendre 2 secondes avant d'envoyer la réponse
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -26,8 +45,8 @@ module.exports = async (senderId, prompt) => {
             attachment: { 
                 type: "image", 
                 payload: { 
-                    url: imageUrl,
-                    is_reusable: true 
+                    is_reusable: true,
+                    attachment_id: path.resolve(imagePath) // Chemin absolu vers l'image
                 } 
             } 
         });
