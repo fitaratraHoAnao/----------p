@@ -1,52 +1,28 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 const sendMessage = require('../handles/sendMessage');
 
 module.exports = async (senderId, prompt) => { 
     try {
-        // Envoyer un message de confirmation que le message a été reçu
-        await sendMessage(senderId, "Message reçu, je génère votre image...");
+        // Envoyer un message d'attente
+        await sendMessage(senderId, "✨ Génération de l'image en cours... ⏳");
 
-        // Vérifier si le prompt est vide
+        // Vérifier si le prompt est vide et lui assigner une valeur par défaut si nécessaire
         if (!prompt || prompt.trim() === '') {
-            prompt = 'fille'; // valeur par défaut
+            prompt = 'fille'; // Valeur par défaut
         }
 
-        // Construire l'URL de l'API pour générer une image
+        // Construire l'URL de l'API pour générer l'image
         const apiUrl = `https://kaiz-apis.gleeze.com/api/text2image?prompt=${encodeURIComponent(prompt)}`;
-        
+
         console.log(`Appel API avec l'URL: ${apiUrl}`);
-        
-        // Configurer la réponse pour recevoir les données binaires
-        const response = await axios({
-            method: 'get',
-            url: apiUrl,
-            responseType: 'arraybuffer'
-        });
 
-        // Créer le dossier temp s'il n'existe pas
-        const tempDir = path.join(__dirname, '../temp');
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-        }
-
-        // Sauvegarder l'image reçue
-        const imagePath = path.join(tempDir, `image_${Date.now()}.jpg`);
-        fs.writeFileSync(imagePath, response.data);
-        
-        console.log(`Image sauvegardée: ${imagePath}`);
-
-        // Attendre 2 secondes avant d'envoyer la réponse
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Envoyer l'image générée à l'utilisateur
+        // Envoyer directement l'image en réponse
         await sendMessage(senderId, { 
             attachment: { 
                 type: "image", 
                 payload: { 
-                    is_reusable: true,
-                    url: `data:image/jpeg;base64,${fs.readFileSync(imagePath).toString('base64')}`
+                    url: apiUrl,
+                    is_reusable: true
                 } 
             } 
         });
@@ -55,13 +31,13 @@ module.exports = async (senderId, prompt) => {
         console.error('Erreur lors de l\'appel à l\'API de génération d\'image:', error);
 
         // Envoyer un message d'erreur à l'utilisateur en cas de problème
-        await sendMessage(senderId, "Désolé, une erreur s'est produite lors de la génération de l'image.");
+        await sendMessage(senderId, "🚨 Oups ! Une erreur s'est produite lors de la génération de l'image.");
     }
 };
 
 // Ajouter les informations de la commande
 module.exports.info = {
-    name: "generation",  // Le nom de la commande
-    description: "Génère une image à partir d'un texte avec l'API Kaizenji.",  // Description de la commande
-    usage: "Envoyez 'generation <description>' pour générer une image correspondant à la description."  // Comment utiliser la commande
+    name: "generation",  // Nom de la commande
+    description: "Génère une image à partir d'un texte avec l'API Kaiz.",  // Description
+    usage: "Envoyez 'generation <description>' pour obtenir une image."  // Comment utiliser la commande
 };
