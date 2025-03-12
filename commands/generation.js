@@ -46,7 +46,7 @@ module.exports = async (senderId, prompt) => {
                 type: "image", 
                 payload: { 
                     is_reusable: true,
-                    attachment_id: path.resolve(imagePath) // Chemin absolu vers l'image
+                    url: `data:image/jpeg;base64,${fs.readFileSync(imagePath).toString('base64')}`
                 } 
             } 
         });
