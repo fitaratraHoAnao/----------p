@@ -15,7 +15,7 @@ module.exports = async (senderId, prompt, uid) => {
         conversations[senderId].push({ role: 'user', content: prompt });
 
         // Envoyer un message d'attente magnifique avec des emojis
-        await sendMessage(senderId, "🚀✨ Je prépare une réponse intelligente pour toi... Laisse-moi un instant magique ! 🤖💫");
+        await sendMessage(senderId, "🚀✨ Laisse-moi un instant magique... Je prépare une réponse intelligente pour toi ! 🤖💫");
 
         // Construire l'URL de l'API pour résoudre la question
         const apiUrl = `https://gpt4-rose.vercel.app/chatgpt?question=${encodeURIComponent(prompt)}&uid=${uid}`;
@@ -23,8 +23,8 @@ module.exports = async (senderId, prompt, uid) => {
         // Appel à l'API GPT-4
         const response = await axios.get(apiUrl);
         
-        // Récupérer la réponse de l'API
-        const reply = response.data.reply;
+        // Récupérer la réponse de l'API (extrait depuis la clé "response")
+        const reply = response.data.response;
 
         // Ajouter la réponse de GPT-4 à l'historique
         conversations[senderId].push({ role: 'assistant', content: reply });
