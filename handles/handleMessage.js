@@ -27,6 +27,9 @@ const activeCommands = {};
 const imageHistory = {};
 const MAX_MESSAGE_LENGTH = 2000; // Limite de caractères pour chaque message envoyé
 
+// Nouveau suivi des questions par image
+const userImageQuestionCount = {};
+
 // Fonction pour envoyer des messages longs en plusieurs parties si nécessaire
 async function sendLongMessage(senderId, message) {
     const MAX_MESSAGE_LENGTH = 2000; // Limite de caractères par message Facebook
@@ -77,6 +80,22 @@ const handleMessage = async (event, api) => {
                     }
                     imageHistory[senderId].push(imageUrl);
 
+                    // Réinitialiser le compteur de questions pour cette image (si c'est une nouvelle image)
+                    if (!userImageQuestionCount[senderId]) {
+                        userImageQuestionCount[senderId] = {};
+                    }
+
+                    // Si c'est une nouvelle image, réinitialiser le compteur
+                    if (!userImageQuestionCount[senderId][imageUrl]) {
+                        userImageQuestionCount[senderId][imageUrl] = 0;
+                    }
+
+                    // Vérifier si la limite de 30 questions a été atteinte
+                    if (userImageQuestionCount[senderId][imageUrl] >= 30) {
+                        await sendMessage(senderId, "Vous avez atteint la limite de 30 questions pour cette image. Si vous avez une nouvelle image, envoyez-la et posez vos nouvelles questions.");
+                        return;
+                    }
+
                     // Utiliser l'API OCR pour analyser l'image
                     const ocrResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
                         link: imageUrl,
@@ -101,6 +120,7 @@ const handleMessage = async (event, api) => {
                     const reply = response.data.message;
 
                     if (reply) {
+                        userImageQuestionCount[senderId][imageUrl]++; // Incrémenter le compteur de questions
                         await sendLongMessage(senderId, `Bruno : voici ma suggestion de réponse pour cette image :\n${reply}`);
                     } else {
                         await sendMessage(senderId, "Je n'ai pas reçu de réponse valide pour l'image.");
