@@ -7,7 +7,7 @@ const axios = require('axios');
 const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
 const commands = {};
 
-// État de pagination global pour être accessible dans ce module
+// 状态 de pagination global pour être accessible dans ce module
 const userPaginationStates = {};
 
 // Charger les commandes dans un objet
@@ -29,15 +29,19 @@ const MAX_MESSAGE_LENGTH = 2000; // Limite de caractères pour chaque message en
 
 // Fonction pour envoyer des messages longs en plusieurs parties si nécessaire
 async function sendLongMessage(senderId, message) {
+    const MAX_MESSAGE_LENGTH = 2000; // Limite de caractères par message Facebook
+    
     if (message.length <= MAX_MESSAGE_LENGTH) {
+        // Si le message est assez court, l'envoyer directement
         await sendMessage(senderId, message);
         return;
     }
     
+    // Diviser le message en plusieurs parties
     for (let i = 0; i < message.length; i += MAX_MESSAGE_LENGTH) {
         const messagePart = message.substring(i, Math.min(i + MAX_MESSAGE_LENGTH, message.length));
         await sendMessage(senderId, messagePart);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Pause de 1 seconde entre chaque message
+        await new Promise(resolve => setTimeout(resolve, 1000));  // Pause de 1s entre chaque message
     }
 }
 
@@ -49,6 +53,7 @@ const handleMessage = async (event, api) => {
     // Message d'attente simple sans bloquer le traitement
     const typingMessage = "🇲🇬 ⏳ Generating...";
     sendMessage(senderId, typingMessage).catch(err => console.error("Erreur lors de l'envoi du message d'attente:", err));
+    // Pas de délai supplémentaire pour ne pas bloquer le traitement
 
     // Commande "stop" pour désactiver toutes les commandes persistantes
     if (message.text && message.text.toLowerCase() === 'stop') {
@@ -72,10 +77,21 @@ const handleMessage = async (event, api) => {
                     }
                     imageHistory[senderId].push(imageUrl);
 
-                    // ➡️ **Prompt fixe : Décrivez bien cette photo**
-                    const prompt = "Décrivez bien cette photo";
+                    // Utiliser l'API OCR pour analyser l'image
+                    const ocrResponse = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
+                        link: imageUrl,
+                        prompt: "Analyse du texte de l'image pour détection de mots-clés",
+                        customId: senderId
+                    });
 
-                    // Appel à l'API pour décrire l'image
+                    const ocrText = ocrResponse.data.message || "";
+                    const hasExerciseKeywords = detectExerciseKeywords(ocrText);
+
+                    const prompt = hasExerciseKeywords
+                        ? "Décrire cette photo"
+                        : "Décrire cette photo";
+
+                    // Demander à l'API de décrire ou résoudre l'exercice
                     const response = await axios.post('https://gemini-sary-prompt-espa-vercel-api.vercel.app/api/gemini', {
                         link: imageUrl,
                         prompt,
@@ -106,6 +122,7 @@ const handleMessage = async (event, api) => {
 
     // Vérifier d'abord si l'utilisateur est en mode pagination pour help
     if (userPaginationStates[senderId] && userPaginationStates[senderId].isActive) {
+        // Passer le texte à la commande help pour la navigation
         await commands['help'](senderId, userText);
         return;
     }
@@ -125,8 +142,9 @@ const handleMessage = async (event, api) => {
             const commandPrompt = userText.replace(commandName, '').trim();
 
             if (commandName === 'help') {
+                // La commande help est exécutée avec les arguments fournis
                 await commands[commandName](senderId, commandPrompt);
-                activeCommands[senderId] = null; // Désactivation automatique après exécution
+                activeCommands[senderId] = null; // Désactivation automatique
                 return;
             } else {
                 // Activer une commande persistante
