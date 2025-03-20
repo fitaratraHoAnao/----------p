@@ -107,7 +107,8 @@ const handleMessage = async (event, api) => {
                     }
                 } catch (error) {
                     console.error('Erreur lors de l\'analyse de l\'image :', error.response ? error.response.data : error.message);
-                    await sendMessage(senderId, "Une erreur s'est produite lors de la description de l'image.");
+                    // Remplacer le message d'erreur ici
+                    await sendMessage(senderId, "J'ai bien reçu votre image. N'hésitez pas à me poser votre question à propos de cette image ou photo que vous avez envoyée.");
                 }
             }
         } else {
