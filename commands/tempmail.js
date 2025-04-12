@@ -1,8 +1,22 @@
+
 const axios = require('axios');
 const sendMessage = require('../handles/sendMessage'); // Importer la fonction sendMessage
 
 // Stocker les emails générés pour chaque utilisateur
 const userSessions = {};
+
+// Fonction pour découper un message long en plusieurs parties
+const splitMessageInChunks = (message, maxLength = 1900) => {
+    const chunks = [];
+    let remaining = message;
+    
+    while (remaining.length > 0) {
+        chunks.push(remaining.substring(0, maxLength));
+        remaining = remaining.substring(maxLength);
+    }
+    
+    return chunks;
+};
 
 module.exports = async (senderId, prompt) => { 
     try {
@@ -42,15 +56,28 @@ module.exports = async (senderId, prompt) => {
                 return await sendMessage(senderId, "🚫 Aucun message reçu pour le moment. Reviens plus tard !");
             }
 
-            // Envoyer les messages un par un avec un délai
+            // Envoyer les messages un par un
             for (const email of emails) {
-                let reply = `📨 **Nouveau message reçu !**\n`;
-                reply += `👤 **Expéditeur :** ${email.from}\n`;
-                reply += `📌 **Objet :** ${email.subject}\n`;
-                reply += `📄 **Message :**\n${email.body.substring(0, 300)}...\n\n📎 *Voir l'email complet dans ta boîte de réception.*`;
-
-                await sendMessage(senderId, reply);
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Pause de 2 secondes entre chaque message
+                // Envoyer l'en-tête du message
+                let header = `📨 **Nouveau message reçu !**\n`;
+                header += `👤 **Expéditeur :** ${email.from}\n`;
+                header += `📌 **Objet :** ${email.subject}\n`;
+                header += `📄 **Message :** \n`;
+                
+                await sendMessage(senderId, header);
+                
+                // Découper le corps du message en morceaux de 1900 caractères max
+                const bodyChunks = splitMessageInChunks(email.body);
+                
+                // Envoyer chaque morceau du corps du message
+                for (let i = 0; i < bodyChunks.length; i++) {
+                    await sendMessage(senderId, bodyChunks[i]);
+                    // Petite pause entre chaque envoi pour éviter les limitations
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                // Pause avant le prochain email
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
         } 
         else {
