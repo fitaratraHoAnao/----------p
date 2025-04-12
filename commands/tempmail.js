@@ -7,12 +7,51 @@ const userSessions = {};
 
 // Fonction pour découper un message long en plusieurs parties
 const splitMessageInChunks = (message, maxLength = 1900) => {
-    const chunks = [];
-    let remaining = message;
+    // Si le message est court, le retourner tel quel
+    if (message.length <= maxLength) {
+        return [message];
+    }
     
-    while (remaining.length > 0) {
-        chunks.push(remaining.substring(0, maxLength));
-        remaining = remaining.substring(maxLength);
+    const chunks = [];
+    // Découper le message en lignes
+    const lines = message.split('\n');
+    let currentChunk = '';
+    
+    for (const line of lines) {
+        // Si ajouter cette ligne dépasserait la longueur maximale
+        if (currentChunk.length + line.length + 1 > maxLength) {
+            // Si la ligne seule est déjà trop longue
+            if (line.length > maxLength) {
+                // Ajouter le morceau actuel s'il n'est pas vide
+                if (currentChunk.length > 0) {
+                    chunks.push(currentChunk);
+                    currentChunk = '';
+                }
+                
+                // Découper la ligne en morceaux
+                let remainingLine = line;
+                while (remainingLine.length > 0) {
+                    chunks.push(remainingLine.substring(0, maxLength));
+                    remainingLine = remainingLine.substring(maxLength);
+                }
+            } else {
+                // Ajouter le morceau actuel et commencer un nouveau avec cette ligne
+                chunks.push(currentChunk);
+                currentChunk = line;
+            }
+        } else {
+            // Ajouter la ligne au morceau actuel
+            if (currentChunk.length > 0) {
+                currentChunk += '\n' + line;
+            } else {
+                currentChunk = line;
+            }
+        }
+    }
+    
+    // Ajouter le dernier morceau s'il n'est pas vide
+    if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
     }
     
     return chunks;
@@ -71,7 +110,22 @@ module.exports = async (senderId, prompt) => {
                 
                 // Envoyer chaque morceau du corps du message
                 for (let i = 0; i < bodyChunks.length; i++) {
-                    await sendMessage(senderId, bodyChunks[i]);
+                    const isFirstChunk = i === 0;
+                    const isLastChunk = i === bodyChunks.length - 1;
+                    
+                    let messageText = bodyChunks[i];
+                    
+                    // Ajouter des délimiteurs pour indiquer où commence et finit chaque partie
+                    if (!isFirstChunk) {
+                        messageText = "⬇️ Suite du message ⬇️\n\n" + messageText;
+                    }
+                    
+                    if (!isLastChunk) {
+                        messageText += "\n\n⬇️ Message à suivre ⬇️";
+                    }
+                    
+                    await sendMessage(senderId, messageText);
+                    
                     // Petite pause entre chaque envoi pour éviter les limitations
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
